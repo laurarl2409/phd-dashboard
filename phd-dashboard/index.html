@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scholar Command — PhD Academic Dashboard</title>
+<meta name="description" content="A personal PhD command center: supervisor deliverables, literature pipeline, milestones, and advancement tracking.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   SCHOLAR COMMAND — pastel edition, sidebar layout
+   Left navigation pane (pages + Tools), Supervisor Sentinel as
+   a clickable banner at the very top, and a deadlines-first
+   dashboard: Calendar → This Weekend (toggleable) → Daily
+   Agenda. Every module has a pencil Edit button that deep-links
+   straight into its Decap CMS entry for frictionless editing.
+   Motion: strong ease-out entries, ease-in-out movement, <300ms.
+   ============================================================ */
+:root{
+  /* Canvas + surfaces */
+  --bg:            #EDEFF9;
+  --card:          #FFFFFF;
+  --card-soft:     #F6F7FD;
+  --line:          #E4E6F3;
+  --ink:           #2B2E4A;
+  --ink-soft:      #6A6F8E;
+  --ink-faint:     #9BA0BC;
+
+  /* Pastel accents */
+  --peri:          #7B87E8;
+  --peri-deep:     #5A63C7;
+  --peri-soft:     #E9ECFC;
+  --violet:        #6F5BD6;
+  --lav:           #B4A5F2;
+  --lav-soft:      #F0EBFC;
+  --sky:           #6FA3E8;
+  --sky-deep:      #3F6FBF;
+  --sky-soft:      #E2EDFB;
+  --mint:          #3E9B77;
+  --mint-soft:     #DFF3EA;
+  --rose:          #C25573;
+  --rose-soft:     #FBE4EC;
+  --butter:        #B98A2E;
+  --butter-soft:   #FBF0D9;
+  --note:          #F3EFFE;
+  --note-line:     rgb(111 91 214 / .16);
+  --note-ink:      #7A6BC9;
+
+  /* Motion */
+  --ease-out:      cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out:   cubic-bezier(0.77, 0, 0.175, 1);
+  --t-press:       160ms;
+  --t-hover:       180ms;
+  --t-move:        240ms;
+  --t-enter:       280ms;
+
+  --radius-lg:     22px;
+  --radius-md:     14px;
+  --radius-sm:     9px;
+
+  --shadow-card:   0 1px 2px rgb(43 46 74 / .05), 0 12px 32px rgb(101 110 190 / .10);
+  --shadow-lift:   0 3px 6px rgb(43 46 74 / .06), 0 16px 40px rgb(101 110 190 / .16);
+
+  --font-display:  "Fraunces", Georgia, serif;
+  --font-ui:       "Schibsted Grotesk", system-ui, -apple-system, sans-serif;
+  --font-mono:     "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+*{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  background:
+    radial-gradient(1000px 520px at 88% -8%, rgb(180 165 242 / .28), transparent 60%),
+    radial-gradient(900px 500px at -6% 30%, rgb(111 163 232 / .18), transparent 55%),
+    radial-gradient(700px 420px at 60% 110%, rgb(228 182 226 / .16), transparent 55%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--font-ui);
+  font-size:15px;
+  line-height:1.5;
+  min-height:100vh;
+}
+
+/* ---------- App layout: left nav pane + main content ---------- */
+.layout{
+  max-width:1480px; margin:0 auto;
+  padding:24px clamp(14px, 2.5vw, 36px) 56px;
+  display:grid; grid-template-columns:252px minmax(0, 1fr); gap:22px;
+  align-items:start;
+}
+@media (max-width:1020px){
+  .layout{ grid-template-columns:1fr; }
+}
+
+/* ---------- Entrance choreography ---------- */
+@keyframes rise-in{
+  from{ opacity:0; transform:translateY(8px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+.card, .sidebar, .banner{
+  opacity:0;
+  animation:rise-in var(--t-enter) var(--ease-out) forwards;
+  animation-delay:var(--d, 0ms);
+}
+
+/* ---------- Sidebar (navigation pane + Tools) ---------- */
+.sidebar{
+  background:var(--card); border:1px solid var(--line);
+  border-radius:var(--radius-lg); box-shadow:var(--shadow-card);
+  padding:20px 16px 18px;
+  position:sticky; top:24px;
+  display:flex; flex-direction:column; gap:20px;
+}
+@media (max-width:1020px){ .sidebar{ position:static; } }
+
+.brand{ display:flex; align-items:center; gap:11px; padding:0 6px; }
+.brand-mark{
+  width:38px; height:38px; border-radius:12px; flex:none;
+  display:grid; place-items:center;
+  background:linear-gradient(135deg, var(--peri), var(--lav));
+  box-shadow:inset 0 1px 0 rgb(255 255 255 / .4), 0 6px 14px rgb(123 135 232 / .35);
+}
+.brand h1{
+  margin:0; font-family:var(--font-display); font-weight:600;
+  font-size:17.5px; letter-spacing:.2px; color:var(--ink); line-height:1.15;
+}
+.brand .sub{ display:block; font-family:var(--font-ui); font-size:11px; font-weight:500; color:var(--ink-faint); letter-spacing:.4px; margin-top:2px; }
+
+.side-label{
+  font-size:10px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase;
+  color:var(--ink-faint); padding:0 8px; margin-bottom:7px;
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+}
+.nav{ display:flex; flex-direction:column; gap:3px; }
+.nav-btn{
+  appearance:none; border:0; cursor:pointer; text-align:left;
+  display:flex; align-items:center; gap:10px;
+  font-family:var(--font-ui); font-size:13px; font-weight:700; letter-spacing:.2px;
+  color:var(--ink-soft); background:transparent;
+  padding:10px 12px; border-radius:11px; width:100%;
+  transition:transform var(--t-press) var(--ease-out),
+             background-color var(--t-hover) ease,
+             color var(--t-hover) ease;
+}
+.nav-btn svg{ flex:none; opacity:.75; }
+.nav-btn:active{ transform:scale(0.98); }
+.nav-btn.on{ background:var(--ink); color:#fff; }
+.nav-btn.on svg{ opacity:1; }
+
+/* Tools inside the nav pane */
+.side-tools{ display:flex; flex-direction:column; gap:3px; }
+.side-tool{
+  display:flex; align-items:center; gap:10px; text-decoration:none;
+  color:var(--ink); font-size:12.5px; font-weight:600;
+  padding:8px 12px; border-radius:11px;
+  transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease;
+}
+.side-tool:active{ transform:scale(0.98); }
+.side-tool .tool-glyph{
+  width:26px; height:26px; border-radius:8px; flex:none;
+  display:grid; place-items:center;
+  background:linear-gradient(135deg, var(--peri-soft), var(--lav-soft));
+  border:1px solid rgb(123 135 232 / .25);
+  color:var(--peri-deep);
+  font-family:var(--font-mono); font-size:10px; font-weight:600;
+}
+.side-tool .tool-note{ display:block; font-size:10px; font-weight:500; color:var(--ink-faint); }
+.side-tool .arrow{ margin-left:auto; color:var(--ink-faint); opacity:0; transition:opacity var(--t-hover) ease, transform var(--t-hover) var(--ease-out); }
+
+.side-foot{ padding:0 8px; font-size:11px; color:var(--ink-faint); }
+.side-foot a{ color:var(--peri-deep); text-decoration:none; font-weight:700; }
+
+@media (max-width:1020px){
+  .nav{ flex-direction:row; flex-wrap:wrap; }
+  .nav-btn{ width:auto; }
+  .side-tools{ flex-direction:row; flex-wrap:wrap; }
+  .side-tool{ border:1px solid var(--line); background:var(--card-soft); }
+}
+
+/* ---------- Main column ---------- */
+.main{ min-width:0; display:flex; flex-direction:column; gap:18px; }
+
+.main-head{
+  display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  padding:2px 4px;
+}
+.main-head h2{ margin:0; font-family:var(--font-display); font-size:24px; font-weight:600; }
+.main-head p{ margin:2px 0 0; font-size:13px; color:var(--ink-soft); }
+.today-chip{
+  display:inline-flex; align-items:center; gap:9px;
+  padding:8px 14px; border-radius:999px;
+  border:1px solid rgb(111 91 214 / .22);
+  background:rgb(111 91 214 / .07);
+  font-family:var(--font-mono); font-size:12.5px; font-weight:500;
+  color:var(--violet); letter-spacing:.3px;
+}
+.today-chip .dot{ width:6px; height:6px; border-radius:50%; background:var(--violet); }
+
+/* ---------- Supervisor Sentinel banner ---------- */
+.banner{
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  width:100%; text-align:left; cursor:pointer;
+  appearance:none; border:1px solid rgb(111 91 214 / .18);
+  border-radius:var(--radius-lg);
+  padding:16px 20px;
+  background:
+    radial-gradient(420px 200px at 100% 0%, rgb(255 255 255 / .55), transparent 60%),
+    linear-gradient(150deg, #C7CDF9 0%, #D8CBF7 55%, #E9D6F3 100%);
+  box-shadow:var(--shadow-card);
+  font-family:var(--font-ui); color:var(--ink);
+  transition:transform var(--t-hover) var(--ease-out), box-shadow var(--t-hover) ease;
+}
+.banner:active{ transform:scale(0.995); }
+.banner-main{ min-width:220px; flex:1; }
+.banner-eyebrow{
+  font-size:10px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase;
+  color:rgb(43 46 74 / .5); margin-bottom:2px; display:block;
+}
+.banner-title{ font-family:var(--font-display); font-size:18px; font-weight:600; line-height:1.25; }
+.banner-stats{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+.banner-days{ text-align:right; }
+.banner-days .num{ font-family:var(--font-mono); font-size:26px; font-weight:600; color:var(--violet); line-height:1; display:block; }
+.banner-days .lbl{ font-size:9.5px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:rgb(43 46 74 / .5); }
+.banner-progress{ font-family:var(--font-mono); font-size:11.5px; color:rgb(43 46 74 / .6); }
+.banner .go{
+  width:34px; height:34px; border-radius:50%; flex:none;
+  display:grid; place-items:center;
+  background:rgb(255 255 255 / .6); border:1px solid rgb(43 46 74 / .15);
+  color:var(--ink);
+  transition:transform var(--t-hover) var(--ease-out), background-color var(--t-hover) ease;
+}
+
+/* ---------- Views ---------- */
+.view{ display:none; }
+.view.active{ display:block; animation:view-in var(--t-move) var(--ease-out); }
+@keyframes view-in{
+  from{ opacity:0; transform:translateY(6px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+.view-head{ margin:4px 4px 18px; display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.view-head h2{ margin:0; font-family:var(--font-display); font-size:24px; font-weight:600; color:var(--ink); }
+.view-head p{ margin:4px 0 0; font-size:13.5px; color:var(--ink-soft); }
+
+/* ---------- Grid ---------- */
+.grid{ display:grid; gap:18px; grid-template-columns:repeat(12, minmax(0, 1fr)); }
+.span-4{ grid-column:span 4; } .span-5{ grid-column:span 5; }
+.span-6{ grid-column:span 6; } .span-7{ grid-column:span 7; }
+.span-8{ grid-column:span 8; } .span-12{ grid-column:span 12; }
+@media (max-width:1240px){
+  .span-4,.span-5,.span-6{ grid-column:span 6; }
+  .span-7,.span-8{ grid-column:span 12; }
+}
+@media (max-width:760px){
+  .span-4,.span-5,.span-6,.span-7,.span-8{ grid-column:span 12; }
+}
+.stack{ display:flex; flex-direction:column; gap:18px; }
+
+/* ---------- Cards ---------- */
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  padding:20px 20px 22px;
+  box-shadow:var(--shadow-card);
+  position:relative;
+}
+.card-head{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; margin-bottom:14px;
+}
+.card-head-actions{ display:flex; align-items:center; gap:8px; }
+.card-title{
+  margin:0; font-family:var(--font-display);
+  font-size:17px; font-weight:600; letter-spacing:.1px; color:var(--ink);
+}
+.card-eyebrow{
+  display:block; font-family:var(--font-ui);
+  font-size:10px; font-weight:700; letter-spacing:1.4px;
+  text-transform:uppercase; color:var(--ink-faint); margin-bottom:3px;
+}
+.card-note-count{ font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); }
+
+/* ---------- Edit buttons (deep-link into Decap CMS) ---------- */
+.edit-btn{
+  display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+  font-family:var(--font-ui); font-size:11px; font-weight:700; letter-spacing:.2px;
+  color:var(--peri-deep);
+  padding:5px 11px; border-radius:999px;
+  background:var(--peri-soft); border:1px solid rgb(123 135 232 / .3);
+  white-space:nowrap;
+  transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease, color var(--t-hover) ease;
+}
+.edit-btn:active{ transform:scale(0.95); }
+
+/* ---------- Badges ---------- */
+.badge{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 11px; border-radius:999px;
+  font-size:11.5px; font-weight:700; letter-spacing:.3px;
+  white-space:nowrap; border:1px solid transparent;
+}
+.badge .bd{ width:6px; height:6px; border-radius:50%; background:currentColor; flex:none; }
+.badge-gray  { background:#EEEFF6; color:#666B87; border-color:#E0E2EF; }
+.badge-amber { background:var(--butter-soft); color:var(--butter); border-color:#F0DFB4; }
+.badge-blue  { background:var(--sky-soft); color:var(--sky-deep); border-color:#C9DDF5; }
+.badge-green { background:var(--mint-soft); color:var(--mint); border-color:#C3E6D6; }
+.badge-red   { background:var(--rose-soft); color:var(--rose); border-color:#F2CBD8; }
+.badge-violet{ background:var(--lav-soft); color:var(--violet); border-color:#E0D6F7; }
+
+.date-tag{
+  font-family:var(--font-mono); font-size:11.5px; font-weight:600;
+  color:var(--violet); letter-spacing:.2px; white-space:nowrap;
+}
+
+/* ---------- Buttons ---------- */
+.btn{
+  appearance:none; border:0; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:var(--font-ui); font-size:12.5px; font-weight:700;
+  padding:8px 14px; border-radius:999px;
+  background:var(--ink); color:#fff;
+  transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease;
+}
+.btn:active{ transform:scale(0.97); }
+.btn-ghost{ background:rgb(255 255 255 / .55); color:var(--ink); border:1px solid rgb(43 46 74 / .18); }
+.btn .chev{ transition:transform var(--t-move) var(--ease-in-out); }
+.btn[aria-expanded="false"] .chev{ transform:rotate(-90deg); }
+
+/* Small icon toggle used by "This Weekend" */
+.toggle-btn{
+  appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:var(--card-soft);
+  width:28px; height:28px; border-radius:9px;
+  display:grid; place-items:center; color:var(--ink-soft);
+  transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease;
+}
+.toggle-btn:active{ transform:scale(0.92); }
+.toggle-btn .chev{ transition:transform var(--t-move) var(--ease-in-out); }
+.toggle-btn[aria-expanded="false"] .chev{ transform:rotate(-90deg); }
+
+/* ---------- Animated expand ---------- */
+.collapse{ display:grid; grid-template-rows:0fr; transition:grid-template-rows var(--t-move) var(--ease-in-out); }
+.collapse > .collapse-inner{ overflow:hidden; min-height:0; }
+.collapse.open{ grid-template-rows:1fr; }
+
+/* ---------- Agenda / weekend / week lists ---------- */
+.week-group{ margin-bottom:16px; } .week-group:last-child{ margin-bottom:0; }
+.week-label{
+  font-size:10.5px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase;
+  color:var(--ink-faint); margin-bottom:8px; display:flex; align-items:center; gap:8px;
+}
+.week-label::after{ content:""; flex:1; height:1px; background:var(--line); }
+.week-item{
+  display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+  padding:7px 10px; margin:0 -10px; border-radius:var(--radius-sm);
+  font-size:13.5px; font-weight:500;
+  transition:background-color var(--t-hover) ease;
+}
+.week-item .wi-name{ min-width:0; }
+.agenda-item{
+  display:flex; align-items:center; gap:12px;
+  padding:9px 10px; margin:0 -10px; border-radius:var(--radius-sm);
+  font-size:13.5px; font-weight:500;
+  transition:background-color var(--t-hover) ease;
+}
+.agenda-time{
+  font-family:var(--font-mono); font-size:11px; font-weight:600; color:var(--violet);
+  background:var(--lav-soft); border:1px solid #E0D6F7;
+  padding:3px 9px; border-radius:999px; flex:none; min-width:76px; text-align:center;
+}
+.lit-empty{ font-size:12.5px; color:var(--ink-faint); padding:12px 4px; }
+
+/* ---------- Sentinel (Advisor page card) ---------- */
+.card-hero{
+  background:
+    radial-gradient(420px 240px at 100% 0%, rgb(255 255 255 / .55), transparent 60%),
+    linear-gradient(150deg, #C7CDF9 0%, #D8CBF7 55%, #E9D6F3 100%);
+  border-color:rgb(111 91 214 / .18);
+}
+.card-hero .card-eyebrow{ color:rgb(43 46 74 / .5); }
+.sentinel-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.sentinel-deliverable{
+  margin:2px 0 0; font-family:var(--font-display);
+  font-size:23px; line-height:1.22; font-weight:600;
+}
+.days-active{ text-align:right; flex:none; }
+.days-active .num{
+  font-family:var(--font-mono); font-size:34px; font-weight:600;
+  color:var(--violet); line-height:1; display:block;
+}
+.days-active .lbl{
+  font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+  color:rgb(43 46 74 / .5);
+}
+.sentinel-status{ margin-top:14px; }
+.milestones{ list-style:none; margin:18px 0 0; padding:0; display:flex; flex-direction:column; gap:9px; }
+.milestone{ display:flex; align-items:center; gap:11px; font-size:13.5px; font-weight:500; }
+.tick{
+  width:19px; height:19px; border-radius:6px; flex:none;
+  border:1.5px solid rgb(43 46 74 / .35);
+  background:rgb(255 255 255 / .45);
+  display:grid; place-items:center;
+  transition:background-color var(--t-hover) ease, border-color var(--t-hover) ease;
+}
+.tick svg{ opacity:0; transform:scale(0.6); transition:opacity var(--t-press) var(--ease-out), transform var(--t-press) var(--ease-out); }
+.milestone.done .tick{ background:var(--violet); border-color:var(--violet); }
+.milestone.done .tick svg{ opacity:1; transform:scale(1); }
+.milestone .m-text{ position:relative; transition:opacity var(--t-move) ease; }
+.milestone .m-text::after{
+  content:""; position:absolute; left:0; top:52%; height:1.5px; width:100%;
+  background:currentColor;
+  transform:scaleX(0); transform-origin:left center;
+  transition:transform var(--t-move) var(--ease-in-out);
+}
+.milestone.done .m-text{ opacity:.5; }
+.milestone.done .m-text::after{ transform:scaleX(1); }
+.sentinel-foot{ margin-top:20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.sentinel-progress{ font-family:var(--font-mono); font-size:12px; color:rgb(43 46 74 / .6); }
+.log-body{
+  margin-top:2px; padding:14px 16px; border-radius:var(--radius-md);
+  background:var(--card-soft); border:1px solid var(--line);
+  font-size:13px; line-height:1.6; color:var(--ink);
+}
+.log-body strong{ color:var(--violet); font-weight:700; }
+.log-body p{ margin:0 0 8px; } .log-body p:last-child{ margin:0; }
+.log-edit-row{ margin-top:12px; display:flex; justify-content:flex-end; }
+
+/* ---------- Calendar ---------- */
+.cal-frame{
+  width:100%; aspect-ratio:16 / 9.4; border:0;
+  border-radius:var(--radius-md); background:var(--card-soft);
+}
+.cal-placeholder{
+  border:1.5px dashed var(--line); border-radius:var(--radius-md);
+  padding:40px 24px; text-align:center; color:var(--ink-soft);
+  background:var(--card-soft); font-size:13.5px;
+}
+.cal-placeholder code{
+  font-family:var(--font-mono); font-size:12px; background:var(--peri-soft);
+  padding:2px 7px; border-radius:6px; color:var(--peri-deep);
+}
+
+/* ---------- Scratchpad ---------- */
+.card-scratch{
+  background:
+    repeating-linear-gradient(transparent 0 27px, var(--note-line) 27px 28px),
+    var(--note);
+  border-top:6px solid var(--lav);
+}
+.scratch-input{
+  width:100%; border:0; background:transparent; outline:none;
+  font-family:var(--font-ui); font-size:14px; font-weight:500; color:var(--ink);
+  padding:6px 2px 10px; border-bottom:1.5px dashed rgb(111 91 214 / .3);
+  transition:border-color var(--t-hover) ease;
+}
+.scratch-input::placeholder{ color:var(--note-ink); }
+.scratch-input:focus{ border-bottom-color:var(--violet); }
+.scratch-list{ list-style:none; margin:12px 0 0; padding:0; display:flex; flex-direction:column; gap:6px; }
+.scratch-item{
+  display:flex; align-items:center; gap:10px;
+  font-size:13.5px; font-weight:500;
+  opacity:1; transform:translateY(0);
+  transition:opacity var(--t-move) var(--ease-out), transform var(--t-move) var(--ease-out);
+}
+.scratch-item.entering{ opacity:0; transform:translateY(6px); }
+.scratch-item.leaving{ opacity:0; transform:translateY(-4px); }
+.scratch-check{
+  appearance:none; width:17px; height:17px; margin:0; flex:none; cursor:pointer;
+  border:1.5px solid var(--violet); border-radius:5px; background:transparent;
+  display:grid; place-items:center;
+  transition:background-color var(--t-press) ease;
+}
+.scratch-check::after{
+  content:""; width:9px; height:5px;
+  border-left:2px solid var(--note); border-bottom:2px solid var(--note);
+  transform:rotate(-45deg) scale(.5); opacity:0;
+  transition:opacity var(--t-press) var(--ease-out), transform var(--t-press) var(--ease-out);
+  margin-top:-2px;
+}
+.scratch-check:checked{ background:var(--violet); }
+.scratch-check:checked::after{ opacity:1; transform:rotate(-45deg) scale(1); }
+.scratch-text{ position:relative; flex:1; min-width:0; transition:opacity var(--t-move) ease; }
+.scratch-text::after{
+  content:""; position:absolute; left:0; top:54%; height:1.5px; width:100%;
+  background:var(--violet);
+  transform:scaleX(0); transform-origin:left center;
+  transition:transform var(--t-move) var(--ease-in-out);
+}
+.scratch-item.done .scratch-text{ opacity:.5; }
+.scratch-item.done .scratch-text::after{ transform:scaleX(1); }
+.scratch-del{
+  appearance:none; border:0; background:transparent; cursor:pointer;
+  color:var(--violet); opacity:0; font-size:15px; line-height:1; padding:2px 4px;
+  transition:opacity var(--t-hover) ease, transform var(--t-press) var(--ease-out);
+}
+.scratch-del:active{ transform:scale(0.9); }
+.scratch-hint{ margin-top:12px; font-size:11px; color:var(--note-ink); font-weight:600; }
+
+/* ---------- Roadmap ---------- */
+.roadmap{ list-style:none; margin:4px 0 0; padding:0 0 0 4px; position:relative; }
+.roadmap::before{
+  content:""; position:absolute; left:12px; top:10px; bottom:10px; width:2px;
+  background:var(--line); border-radius:2px;
+}
+.rm-item{ position:relative; padding:0 0 22px 36px; }
+.rm-item:last-child{ padding-bottom:2px; }
+.rm-node{
+  position:absolute; left:4px; top:2px; width:18px; height:18px; border-radius:50%;
+  background:var(--card); border:2.5px solid var(--ink-faint);
+  transition:border-color var(--t-hover) ease, background-color var(--t-hover) ease;
+}
+.rm-item.completed .rm-node{ background:var(--peri); border-color:var(--peri); }
+.rm-item.completed .rm-node::after{
+  content:""; position:absolute; inset:0; margin:auto; width:7px; height:4px;
+  border-left:2px solid #fff; border-bottom:2px solid #fff;
+  transform:rotate(-45deg) translate(0.5px, -1px);
+}
+.rm-item.active .rm-node{ background:var(--violet); border-color:var(--violet); }
+@keyframes node-pulse{
+  0%{ box-shadow:0 0 0 0 rgb(111 91 214 / .4); }
+  100%{ box-shadow:0 0 0 10px rgb(111 91 214 / 0); }
+}
+.rm-item.active .rm-node{ animation:node-pulse 2.2s var(--ease-out) infinite; }
+.rm-title{ font-weight:700; font-size:14px; }
+.rm-item.future .rm-title{ color:var(--ink-soft); font-weight:600; }
+.rm-note{ font-size:12.5px; color:var(--ink-faint); margin-top:1px; }
+.rm-state{ margin-top:6px; }
+
+/* ---------- Class repository ---------- */
+.course-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px; }
+.course{
+  border:1px solid var(--line); border-radius:var(--radius-md);
+  background:var(--card); padding:14px 15px;
+  cursor:pointer; user-select:none;
+  box-shadow:var(--shadow-card);
+  transition:transform var(--t-hover) var(--ease-out), box-shadow var(--t-hover) ease, border-color var(--t-hover) ease;
+}
+.course:active{ transform:scale(0.98); }
+.course-code{ font-family:var(--font-mono); font-size:11px; font-weight:600; color:var(--peri-deep); letter-spacing:.4px; }
+.course-title{ font-weight:700; font-size:14px; margin:3px 0 1px; }
+.course-term{ font-size:12px; color:var(--ink-faint); }
+.course-meta{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+.course-count{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); }
+.course .chev{ color:var(--ink-faint); transition:transform var(--t-move) var(--ease-in-out); }
+.course[aria-expanded="true"] .chev{ transform:rotate(180deg); }
+.materials{ list-style:none; margin:10px 0 0; padding:10px 0 0; border-top:1px dashed var(--line); display:flex; flex-direction:column; gap:6px; }
+.material{ display:flex; align-items:center; gap:9px; font-size:12.5px; }
+.material a{ color:var(--ink); text-decoration:none; font-weight:600; border-bottom:1px solid transparent; transition:border-color var(--t-hover) ease, color var(--t-hover) ease; }
+.mat-kind{
+  font-family:var(--font-mono); font-size:9.5px; font-weight:600; letter-spacing:.5px;
+  padding:2px 7px; border-radius:5px; background:var(--peri-soft); color:var(--peri-deep); flex:none;
+}
+
+/* ---------- Journals ---------- */
+.journal-list{ display:flex; flex-direction:column; }
+.journal{
+  display:grid; grid-template-columns:minmax(160px, .8fr) 1.6fr auto;
+  gap:14px; align-items:center;
+  padding:13px 12px; margin:0 -12px; border-radius:var(--radius-sm);
+  border-bottom:1px solid var(--line);
+  transition:background-color var(--t-hover) ease;
+}
+.journal:last-child{ border-bottom:0; }
+.journal-name{ font-weight:700; font-size:13.5px; }
+.journal-focus{ font-size:12.5px; color:var(--ink-soft); }
+.journal-link{
+  font-size:12px; font-weight:700; color:var(--peri-deep); text-decoration:none;
+  display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+}
+.journal-link .arrow{ transition:transform var(--t-hover) var(--ease-out); }
+@media (max-width:640px){ .journal{ grid-template-columns:1fr; gap:4px; } }
+
+/* ---------- Writing matrix ---------- */
+.writing-project{ font-family:var(--font-display); font-size:17px; font-weight:600; margin:0 0 2px; }
+.writing-phase{ font-size:12px; color:var(--ink-faint); font-weight:600; }
+.write-rows{ margin-top:16px; display:flex; flex-direction:column; gap:13px; }
+.write-row{ display:grid; grid-template-columns:minmax(120px, .9fr) 2fr auto; gap:14px; align-items:center; }
+.write-name{ font-size:13px; font-weight:600; }
+.write-track{ height:9px; border-radius:99px; background:var(--peri-soft); overflow:hidden; }
+.write-fill{
+  height:100%; border-radius:99px;
+  background:linear-gradient(90deg, var(--peri), var(--lav));
+  transform:scaleX(0); transform-origin:left center;
+  transition:transform 600ms var(--ease-out);
+}
+.write-pct{ font-family:var(--font-mono); font-size:11.5px; font-weight:600; color:var(--peri-deep); min-width:38px; text-align:right; }
+@media (max-width:560px){ .write-row{ grid-template-columns:1fr auto; } .write-track{ grid-column:1 / -1; } }
+
+/* ---------- Literature ---------- */
+.tag-rail{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px; }
+.tag{
+  appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:var(--card);
+  border-radius:999px; padding:5px 12px;
+  font-family:var(--font-ui); font-size:11.5px; font-weight:700; color:var(--ink-soft);
+  transition:transform var(--t-press) var(--ease-out),
+             background-color var(--t-hover) ease,
+             color var(--t-hover) ease,
+             border-color var(--t-hover) ease;
+}
+.tag:active{ transform:scale(0.95); }
+.tag.on{ background:var(--ink); border-color:var(--ink); color:#fff; }
+.lit-split{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+@media (max-width:900px){ .lit-split{ grid-template-columns:1fr; } }
+.lit-col-head{
+  display:flex; align-items:center; gap:8px; margin-bottom:11px;
+  font-size:11px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-faint);
+}
+.lit-col-head::after{ content:""; flex:1; height:1px; background:var(--line); }
+.lit-list{ display:flex; flex-direction:column; gap:10px; }
+.lit-entry{
+  border:1px solid var(--line); border-radius:var(--radius-md);
+  background:var(--card); padding:13px 14px;
+  box-shadow:var(--shadow-card);
+  transition:opacity 200ms var(--ease-out), transform 200ms var(--ease-out),
+             box-shadow var(--t-hover) ease;
+}
+.lit-entry.is-hidden{ opacity:0; transform:scale(0.97); pointer-events:none; }
+.lit-top{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.lit-title{ font-weight:700; font-size:13.5px; line-height:1.35; }
+.lit-year{ font-family:var(--font-mono); font-size:11px; color:var(--violet); font-weight:600; flex:none; }
+.lit-tags{ display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+.lit-tag{
+  appearance:none; border:0; cursor:pointer;
+  font-family:var(--font-ui); font-size:10px; font-weight:700; letter-spacing:.3px;
+  padding:3px 9px; border-radius:999px;
+  background:var(--lav-soft); color:var(--violet);
+  transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease, color var(--t-hover) ease;
+}
+.lit-tag:active{ transform:scale(0.94); }
+.lit-summary{ font-size:12.5px; color:var(--ink-soft); margin-top:8px; line-height:1.5; }
+.lit-files{ display:flex; gap:12px; margin-top:9px; }
+.lit-files a{
+  font-size:11.5px; font-weight:700; color:var(--sky-deep); text-decoration:none;
+  display:inline-flex; align-items:center; gap:5px;
+}
+
+/* ---------- Pipelines ---------- */
+.pipes{ display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; }
+@media (max-width:1100px){ .pipes{ grid-template-columns:repeat(2, 1fr); } }
+@media (max-width:620px){ .pipes{ grid-template-columns:1fr; } }
+.pipe{
+  border:1px solid var(--line); border-radius:var(--radius-md);
+  background:var(--card-soft); padding:15px 15px 16px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.pipe-head{
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft);
+  padding-bottom:9px; border-bottom:2px solid var(--peri);
+}
+.pipe-count{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); letter-spacing:0; }
+.pipe-item{
+  border-radius:var(--radius-sm); padding:10px 11px;
+  background:var(--card); border:1px solid var(--line);
+  transition:transform var(--t-hover) var(--ease-out), box-shadow var(--t-hover) ease;
+}
+.pipe-item-name{ font-weight:700; font-size:12.5px; line-height:1.35; }
+.pipe-item-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+.pipe-item-foot{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; flex-wrap:wrap; }
+
+/* ---------- Hover states (pointer devices only) ---------- */
+@media (hover:hover) and (pointer:fine){
+  .nav-btn:hover{ background:var(--peri-soft); color:var(--ink); }
+  .nav-btn.on:hover{ background:var(--ink); color:#fff; }
+  .side-tool:hover{ background:var(--peri-soft); }
+  .side-tool:hover .arrow{ opacity:1; transform:translate(2px, -2px); }
+  .banner:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lift); }
+  .banner:hover .go{ transform:translateX(3px); background:#fff; }
+  .btn:hover{ background:#3B3F63; }
+  .btn-ghost:hover{ background:rgb(255 255 255 / .85); }
+  .toggle-btn:hover{ background:var(--peri-soft); color:var(--ink); }
+  .edit-btn:hover{ background:var(--peri); color:#fff; }
+  .week-item:hover, .agenda-item:hover{ background:var(--card-soft); }
+  .journal:hover{ background:var(--card-soft); }
+  .journal-link:hover .arrow{ transform:translate(2px, -2px); }
+  .course:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lift); border-color:rgb(123 135 232 / .45); }
+  .material a:hover{ color:var(--peri-deep); border-bottom-color:var(--peri-deep); }
+  .tag:hover{ border-color:var(--peri); color:var(--peri-deep); }
+  .tag.on:hover{ color:#fff; }
+  .lit-entry:hover{ box-shadow:var(--shadow-lift); }
+  .lit-tag:hover{ background:var(--violet); color:#fff; }
+  .lit-files a:hover{ text-decoration:underline; }
+  .pipe-item:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lift); }
+  .scratch-item:hover .scratch-del{ opacity:1; }
+  .scratch-check:hover{ border-color:var(--peri-deep); }
+}
+@media (hover:none){ .scratch-del{ opacity:.6; } }
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  .card, .sidebar, .banner{ animation:fade-only 200ms ease forwards; }
+  .view.active{ animation:fade-only 200ms ease; }
+  @keyframes fade-only{ from{ opacity:0; } to{ opacity:1; } }
+  *{ transition-duration:1ms !important; animation-duration:1ms !important; }
+  .rm-item.active .rm-node{ animation:none; box-shadow:0 0 0 4px rgb(111 91 214 / .25); }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ================================================================
+       LEFT NAVIGATION PANE: pages + Tools
+       ================================================================ -->
+  <aside class="sidebar" style="--d:0ms">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 8l10 5 10-5-10-5z"/><path d="M6 10.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-5.5"/></svg>
+      </span>
+      <h1>Scholar Command<span class="sub" id="greeting">PhD Academic Dashboard</span></h1>
+    </div>
+
+    <div>
+      <div class="side-label">Menu</div>
+      <nav class="nav" aria-label="Pages">
+        <button class="nav-btn on" data-view="home">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          Dashboard</button>
+        <button class="nav-btn" data-view="advisor">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Advisor</button>
+        <button class="nav-btn" data-view="classes">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Classes</button>
+        <button class="nav-btn" data-view="literature">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Literature</button>
+        <button class="nav-btn" data-view="journals">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Journals</button>
+        <button class="nav-btn" data-view="pipelines">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Pipelines</button>
+      </nav>
+    </div>
+
+    <div>
+      <div class="side-label">Tools
+        <a class="edit-btn" data-edit="tools" href="#" target="_blank" rel="noopener" title="Edit tools in the CMS">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Edit</a>
+      </div>
+      <div class="side-tools" id="side-tools"></div>
+    </div>
+
+    <div class="side-foot">
+      Content lives in <a href="/admin/" target="_blank" rel="noopener">/admin/</a> · media saves to /assets/
+    </div>
+  </aside>
+
+  <!-- ================================================================
+       MAIN COLUMN
+       ================================================================ -->
+  <div class="main">
+
+    <div class="main-head">
+      <div>
+        <h2 id="main-title">Dashboard</h2>
+        <p>Deadlines first: calendar, the weekend ahead, and today's agenda.</p>
+      </div>
+      <span class="today-chip"><span class="dot"></span><span id="today-date">—</span></span>
+    </div>
+
+    <!-- Supervisor Sentinel banner: click to open the Advisor page -->
+    <button class="banner" id="sentinel-banner" style="--d:40ms" aria-label="Open the Advisor section">
+      <div class="banner-main">
+        <span class="banner-eyebrow">Supervisor Sentinel · Advisory Notes</span>
+        <span class="banner-title" id="banner-deliverable">—</span>
+      </div>
+      <div class="banner-stats">
+        <span class="badge badge-gray" id="banner-status"><span class="bd"></span>—</span>
+        <span class="banner-progress" id="banner-progress"></span>
+        <span class="banner-days"><span class="num" id="days-active">0</span><span class="lbl">Days Active</span></span>
+        <span class="go" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </div>
+    </button>
+
+    <!-- ============================================================
+         PAGE: DASHBOARD — Calendar → This Weekend → Daily Agenda
+         ============================================================ -->
+    <section class="view active" id="view-home">
+      <div class="grid">
+
+        <!-- 1. Calendar -->
+        <section class="card span-8" style="--d:80ms" aria-labelledby="cal-title">
+          <div class="card-head">
+            <div>
+              <span class="card-eyebrow">Time &amp; Institutional Radar</span>
+              <h3 class="card-title" id="cal-title">Month Calendar</h3>
+            </div>
+            <a class="edit-btn" data-edit="settings" href="#" target="_blank" rel="noopener">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Edit</a>
+          </div>
+          <div id="cal-slot"></div>
+        </section>
+
+        <!-- 2. This Weekend (toggleable) → 3. Daily Agenda -->
+        <div class="span-4 stack">
+          <section class="card" style="--d:120ms" aria-labelledby="weekend-title">
+            <div class="card-head" style="margin-bottom:0;">
+              <div>
+                <span class="card-eyebrow">Coming Up</span>
+                <h3 class="card-title" id="weekend-title">This Weekend</h3>
+              </div>
+              <div class="card-head-actions">
+                <a class="edit-btn" data-edit="week" href="#" target="_blank" rel="noopener">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  Edit</a>
+                <button class="toggle-btn" id="weekend-toggle" aria-expanded="true" aria-controls="weekend-panel" title="Show or hide the weekend summary">
+                  <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="collapse open" id="weekend-panel">
+              <div class="collapse-inner">
+                <div id="weekend-body" style="padding-top:14px;"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card" style="--d:160ms" aria-labelledby="agenda-title">
+            <div class="card-head">
+              <div>
+                <span class="card-eyebrow">What do I have for today?</span>
+                <h3 class="card-title" id="agenda-title">Daily Agenda</h3>
+              </div>
+              <a class="edit-btn" data-edit="week" href="#" target="_blank" rel="noopener">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Edit</a>
+            </div>
+            <div id="agenda-body"></div>
+          </section>
+        </div>
+
+        <!-- Supporting widgets -->
+        <section class="card span-4" style="--d:200ms" aria-labelledby="week-title">
+          <div class="card-head">
+            <div>
+              <span class="card-eyebrow">Time &amp; Institutional Radar</span>
+              <h3 class="card-title" id="week-title">This Week in a Nutshell</h3>
+            </div>
+            <a class="edit-btn" data-edit="week" href="#" target="_blank" rel="noopener">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Edit</a>
+          </div>
+          <div id="week-body"></div>
+        </section>
+
+        <section class="card card-scratch span-4" style="--d:240ms" aria-labelledby="scratch-title">
+          <div class="card-head">
+            <div>
+              <span class="card-eyebrow" style="color:var(--note-ink)">Immediate Brain Dump</span>
+              <h3 class="card-title" id="scratch-title">Scratchpad</h3>
+            </div>
+            <span class="card-note-count" id="scratch-count" style="color:var(--note-ink)"></span>
+          </div>
+          <input class="scratch-input" id="scratch-input" type="text" autocomplete="off"
+                 placeholder="Type a thought, hit Enter…" aria-label="Add a scratchpad item">
+          <ul class="scratch-list" id="scratch-list"></ul>
+          <p class="scratch-hint">Enter adds an item · checking it strikes it through · saved on this device</p>
+        </section>
+
+        <section class="card span-4" style="--d:280ms" aria-labelledby="roadmap-title">
+          <div class="card-head">
+            <div>
+              <span class="card-eyebrow">Institutional Hurdles</span>
+              <h3 class="card-title" id="roadmap-title">Milestone Roadmap</h3>
+            </div>
+            <a class="edit-btn" data-edit="roadmap" href="#" target="_blank" rel="noopener">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Edit</a>
+          </div>
+          <ol class="roadmap" id="roadmap"></ol>
+        </section>
+
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: ADVISOR (dedicated Supervisor Sentinel section)
+         ============================================================ -->
+    <section class="view" id="view-advisor">
+      <div class="view-head">
+        <div>
+          <h2>Advisor</h2>
+          <p>Your research North Star: advisor deliverables, micro-milestones, and advising session notes.</p>
+        </div>
+        <a class="edit-btn" data-edit="supervisor" href="#" target="_blank" rel="noopener">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Edit deliverable &amp; milestones</a>
+      </div>
+      <div class="grid">
+        <section class="card card-hero span-7" style="--d:0ms" aria-labelledby="sentinel-title">
+          <div class="card-head">
+            <div>
+              <span class="card-eyebrow">Supervisor Sentinel · North Star</span>
+              <h3 class="card-title" id="sentinel-title">Advisor Deliverable</h3>
+            </div>
+          </div>
+          <div class="sentinel-top">
+            <p class="sentinel-deliverable" id="sentinel-deliverable">—</p>
+            <div class="days-active">
+              <span class="num" id="days-active-full">0</span>
+              <span class="lbl">Days Active</span>
+            </div>
+          </div>
+          <div class="sentinel-status"><span class="badge badge-gray" id="sentinel-status"><span class="bd"></span>—</span></div>
+          <ul class="milestones" id="sentinel-milestones" aria-label="Micro-milestones"></ul>
+          <div class="sentinel-foot">
+            <span class="sentinel-progress" id="sentinel-progress"></span>
+          </div>
+        </section>
+
+        <section class="card span-5" style="--d:60ms" aria-labelledby="log-title">
+          <div class="card-head">
+            <div>
+              <span class="card-eyebrow">Previous Advising Session</span>
+              <h3 class="card-title" id="log-title">Last Discussion Log</h3>
+            </div>
+            <button class="btn btn-ghost" id="log-toggle" aria-expanded="true" aria-controls="log-panel">
+              Show / hide
+              <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+          </div>
+          <div class="collapse open" id="log-panel">
+            <div class="collapse-inner">
+              <div class="log-body" id="log-body"></div>
+              <div class="log-edit-row">
+                <a class="edit-btn" data-edit="supervisor" href="#" target="_blank" rel="noopener">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  Write / update this log</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: CLASS REPOSITORY
+         ============================================================ -->
+    <section class="view" id="view-classes">
+      <div class="view-head">
+        <div>
+          <h2>Class Repository</h2>
+          <p>Your PhD courses. Click a course to reveal its notes, PDFs, slides, and projects.</p>
+        </div>
+        <a class="edit-btn" data-edit="courses" href="#" target="_blank" rel="noopener">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Edit classes</a>
+      </div>
+      <div class="card" style="--d:0ms">
+        <div class="card-head">
+          <div><span class="card-eyebrow">Knowledge &amp; Repository Hub</span>
+          <h3 class="card-title">Courses</h3></div>
+          <span class="card-note-count" id="courses-count"></span>
+        </div>
+        <div class="course-grid" id="course-grid"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: LITERATURE QUEUE & READING LOG
+         ============================================================ -->
+    <section class="view" id="view-literature">
+      <div class="view-head">
+        <div>
+          <h2>Literature Queue &amp; Reading Log</h2>
+          <p>To-Read inbox on the left, Read archive on the right. Click any keyword badge to filter.</p>
+        </div>
+        <a class="edit-btn" data-edit="literature" href="#" target="_blank" rel="noopener">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Edit entries</a>
+      </div>
+      <div class="card" style="--d:0ms">
+        <div class="card-head">
+          <div><span class="card-eyebrow">Knowledge &amp; Repository Hub</span>
+          <h3 class="card-title">Reading Workspace</h3></div>
+          <span class="card-note-count" id="lit-filter-note"></span>
+        </div>
+        <div class="tag-rail" id="tag-rail" role="group" aria-label="Filter by keyword"></div>
+        <div class="lit-split">
+          <div>
+            <div class="lit-col-head">To-Read Queue · Inbox</div>
+            <div class="lit-list" id="lit-queue"></div>
+          </div>
+          <div>
+            <div class="lit-col-head">Read Archive · Vault</div>
+            <div class="lit-list" id="lit-archive"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: TARGET JOURNAL DIRECTORY
+         ============================================================ -->
+    <section class="view" id="view-journals">
+      <div class="view-head">
+        <div>
+          <h2>Target Journal Directory</h2>
+          <p>Journals recommended to you: their focus, aims, and submission guidelines.</p>
+        </div>
+        <a class="edit-btn" data-edit="journals" href="#" target="_blank" rel="noopener">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Edit journals</a>
+      </div>
+      <div class="card" style="--d:0ms">
+        <div class="card-head">
+          <div><span class="card-eyebrow">Knowledge &amp; Repository Hub</span>
+          <h3 class="card-title">Journal Library</h3></div>
+        </div>
+        <div class="journal-list" id="journal-list"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: ADVANCEMENT PIPELINES
+         ============================================================ -->
+    <section class="view" id="view-pipelines">
+      <div class="view-head">
+        <div>
+          <h2>Advancement Pipelines</h2>
+          <p>Tracking matrices for submissions, conferences, grants, and opportunities, plus your writing progress.</p>
+        </div>
+        <a class="edit-btn" data-edit="pipelines" href="#" target="_blank" rel="noopener">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Edit pipelines</a>
+      </div>
+      <div class="grid">
+        <section class="card span-12" style="--d:0ms" aria-labelledby="pipes-title">
+          <div class="card-head">
+            <div>
+              <span class="card-eyebrow">Advancement Pipelines</span>
+              <h3 class="card-title" id="pipes-title">Tracking Matrices</h3>
+            </div>
+          </div>
+          <div class="pipes">
+            <div class="pipe">
+              <div class="pipe-head">Journal Submissions <span class="pipe-count" id="count-submissions"></span></div>
+              <div id="pipe-submissions"></div>
+            </div>
+            <div class="pipe">
+              <div class="pipe-head">Conferences <span class="pipe-count" id="count-conferences"></span></div>
+              <div id="pipe-conferences"></div>
+            </div>
+            <div class="pipe">
+              <div class="pipe-head">Grants <span class="pipe-count" id="count-grants"></span></div>
+              <div id="pipe-grants"></div>
+            </div>
+            <div class="pipe">
+              <div class="pipe-head">Programs &amp; Misc <span class="pipe-count" id="count-programs"></span></div>
+              <div id="pipe-programs"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card span-12" style="--d:60ms" aria-labelledby="writing-title">
+          <div class="card-head">
+            <div>
+              <span class="card-eyebrow">Advancement Pipelines</span>
+              <h3 class="card-title" id="writing-title">Writing Progress Matrix</h3>
+            </div>
+            <a class="edit-btn" data-edit="writing" href="#" target="_blank" rel="noopener">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Edit</a>
+          </div>
+          <p class="writing-project" id="writing-project">—</p>
+          <span class="writing-phase" id="writing-phase"></span>
+          <div class="write-rows" id="write-rows"></div>
+        </section>
+      </div>
+    </section>
+
+  </div>
+</div>
+<script>
+/* ============================================================
+   SCHOLAR COMMAND — application logic (sidebar + banner build)
+   Content is authored in Decap CMS (/admin/), which commits
+   JSON data files into /content/data/. This script fetches
+   those files; if a file does not exist yet (fresh install),
+   a seeded example dataset renders so the layout never breaks.
+
+   Pages are hash-routed: #home #advisor #classes #literature
+   #journals #pipelines — every page is directly linkable.
+   Every "Edit" pencil deep-links into the exact CMS entry:
+   /admin/#/collections/dashboard/entries/<name>
+   ============================================================ */
+(function(){
+"use strict";
+
+var esc = function(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+};
+
+function loadJSON(path, fallback){
+  return fetch(path, {cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .catch(function(){ return fallback; });
+}
+
+/* ---------- Edit deep links into Decap CMS ---------- */
+var ADMIN_ENTRY = "/admin/#/collections/dashboard/entries/";
+document.querySelectorAll("[data-edit]").forEach(function(a){
+  a.setAttribute("href", ADMIN_ENTRY + a.getAttribute("data-edit"));
+});
+
+/* ---------- Seed data (used until the CMS commits real files) ---------- */
+var SEEDS = {
+  settings: {
+    owner_name: "Doctoral Candidate",
+    calendar_embed: "",
+    tagline: "PhD Academic Dashboard"
+  },
+  tools: { tools: [
+    { label: "Notion",          url: "https://www.notion.so",         note: "Workspace" },
+    { label: "Zotero",          url: "https://www.zotero.org",        note: "References" },
+    { label: "Research Rabbit", url: "https://www.researchrabbit.ai", note: "Citation maps" },
+    { label: "Gemini",          url: "https://gemini.google.com",     note: "AI assistant" },
+    { label: "Lit Synthesis Matrix", url: "https://claude.site", note: "Claude artifact" },
+    { label: "Methods Sanity Checker", url: "https://claude.site", note: "Claude artifact" },
+    { label: "Abstract Sharpener", url: "https://claude.site", note: "Claude artifact" }
+  ]},
+  supervisor: {
+    deliverable: "Qualifying Paper — Methods Section Draft",
+    status: "In Progress",
+    cycle_start: "2026-06-15T09:00:00.000Z",
+    milestones: [
+      { task: "Finalize sampling frame rationale", done: true },
+      { task: "Draft data collection procedures", done: true },
+      { task: "Write analytic strategy subsection", done: false },
+      { task: "Integrate advisor comments from last memo", done: false },
+      { task: "Send full section for review", done: false }
+    ],
+    last_discussion: "**Agreed terms:** narrow the sample to two districts; justify the comparative case logic explicitly. **Advisor flagged:** the coding scheme needs an inter-rater reliability plan before IRB submission. **Next meeting expects:** a complete methods draft plus a one-page IRB timeline."
+  },
+  week: {
+    agenda: [
+      { day: "Monday",    time: "9:00 AM",  name: "Writing block — methods section" },
+      { day: "Tuesday",   time: "2:00 PM",  name: "EDU 801 seminar" },
+      { day: "Tuesday",   time: "4:30 PM",  name: "Office hours with advisor" },
+      { day: "Wednesday", time: "12:00 PM", name: "Department colloquium" },
+      { day: "Thursday",  time: "10:00 AM", name: "EDU 845 seminar" },
+      { day: "Friday",    time: "9:00 AM",  name: "Writing group check-in" },
+      { day: "Friday",    time: "3:00 PM",  name: "Send methods draft to advisor" }
+    ],
+    weekend: [
+      { name: "Annotate two queue papers", when: "Sat AM" },
+      { name: "Draft colloquium reflection memo", when: "Sat PM" },
+      { name: "Rest — no dissertation guilt", when: "Sun" }
+    ],
+    classes: [
+      { name: "EDU 801 · Advanced Qualitative Methods", meets: "Tue 2:00 PM" },
+      { name: "EDU 845 · Sociology of Education Seminar", meets: "Thu 10:00 AM" }
+    ],
+    events: [
+      { name: "Department Colloquium — visiting scholar", when: "Wed 12:00 PM" },
+      { name: "Writing group check-in", when: "Fri 9:00 AM" }
+    ],
+    deadlines: [
+      { name: "Methods draft to advisor", due: "Fri Jul 10" },
+      { name: "Colloquium reflection memo", due: "Mon Jul 13" }
+    ]
+  },
+  roadmap: { milestones: [
+    { title: "Coursework", state: "Completed", note: "Core sequence finished Spring 2026" },
+    { title: "Qualifying Paper", state: "Active Focus", note: "Methods section in progress" },
+    { title: "Proposal Defense", state: "Future", note: "Target: Spring 2027" },
+    { title: "IRB Approval", state: "Future", note: "Submit after proposal defense" },
+    { title: "Dissertation Defense", state: "Future", note: "Target: Spring 2029" }
+  ]},
+  courses: { courses: [
+    { code: "EDU 801", title: "Advanced Qualitative Methods", term: "Summer 2026", materials: [
+      { label: "Week 5 lecture notes", kind: "Notes", link: "#" },
+      { label: "Coding workshop slides", kind: "Slides", link: "#" },
+      { label: "Field methods reader.pdf", kind: "PDF", link: "#" }
+    ]},
+    { code: "EDU 845", title: "Sociology of Education Seminar", term: "Summer 2026", materials: [
+      { label: "Seminar response papers", kind: "Notes", link: "#" },
+      { label: "Final project outline", kind: "Project", link: "#" }
+    ]},
+    { code: "STA 710", title: "Applied Multilevel Modeling", term: "Spring 2026", materials: [
+      { label: "HLM problem sets", kind: "Project", link: "#" },
+      { label: "Course slide archive", kind: "Slides", link: "#" }
+    ]}
+  ]},
+  journals: { journals: [
+    { name: "American Educational Research Journal", focus: "Original empirical and theoretical studies across education research", guidelines: "https://journals.sagepub.com/author-instructions/AER" },
+    { name: "Sociology of Education", focus: "Studies of how social institutions and processes shape educational outcomes", guidelines: "https://journals.sagepub.com/author-instructions/SOE" },
+    { name: "Qualitative Inquiry", focus: "Methodological innovation in qualitative research across disciplines", guidelines: "https://journals.sagepub.com/author-instructions/QIX" }
+  ]},
+  literature: { entries: [
+    { title: "Street-Level Bureaucracy and Teacher Discretion", year: 2021, status: "To-Read",
+      tags: ["policy","qualitative"], pdf: "", media: "",
+      summary: "Recommended by advisor as the frame for the discretion argument in chapter framing." },
+    { title: "Comparative Case Study Design in Education", year: 2017, status: "To-Read",
+      tags: ["methods","case-study"], pdf: "", media: "",
+      summary: "Directly relevant to the two-district sampling justification." },
+    { title: "Culturally Sustaining Pedagogies", year: 2014, status: "Read",
+      tags: ["theory","equity"], pdf: "", media: "",
+      summary: "Core theoretical anchor; key distinction between responsive and sustaining stances noted in Zotero." },
+    { title: "Thematic Analysis: A Reflexive Approach", year: 2019, status: "Read",
+      tags: ["methods","qualitative"], pdf: "", media: "",
+      summary: "Adopted the six-phase reflexive TA process for the coding plan." }
+  ]},
+  pipelines: {
+    submissions: [
+      { title: "Discretion at the Margins (with advisor)", journal: "Sociology of Education", status: "Under Review" },
+      { title: "Methods reflection short piece", journal: "Qualitative Inquiry", status: "Drafting" }
+    ],
+    conferences: [
+      { name: "AERA Annual Meeting", date: "Apr 2027", attendance: "Presenting", status: "Abstract Submitted" },
+      { name: "Sociology of Ed Association", date: "Feb 2027", attendance: "Spectator", status: "Planned" }
+    ],
+    grants: [
+      { name: "NAEd/Spencer Dissertation Fellowship", sponsor: "Spencer Foundation", deadline: "Oct 2026", status: "Drafting" },
+      { name: "Graduate Research Travel Grant", sponsor: "Graduate School", deadline: "Sep 2026", status: "Scouting" }
+    ],
+    programs: [
+      { name: "Summer Institute in Ethnography", org: "Method School", status: "Applied", note: "Decision expected August" },
+      { name: "Departmental TA Mentorship Program", org: "Home department", status: "Watching", note: "Opens in Fall" }
+    ]
+  },
+  writing: {
+    project: "Qualifying Paper",
+    phase: "Pre-Candidacy · transitions to Dissertation chapters upon candidacy",
+    sections: [
+      { name: "Introduction", progress: 100 },
+      { name: "Literature Review", progress: 85 },
+      { name: "Methods", progress: 45 },
+      { name: "Preliminary Findings", progress: 10 }
+    ]
+  }
+};
+
+/* ---------- Small helpers ---------- */
+function badgeClass(status){
+  var s = String(status || "").toLowerCase();
+  if (/accepted|awarded|completed|ready|attended/.test(s)) return "badge-green";
+  if (/review|submitted|sent/.test(s))                     return "badge-blue";
+  if (/progress|drafting|scouting|applied|planned|resubmit|watching/.test(s)) return "badge-amber";
+  if (/rejected|declined/.test(s))                         return "badge-red";
+  return "badge-gray";
+}
+function badge(status){
+  return '<span class="badge ' + badgeClass(status) + '"><span class="bd"></span>' + esc(status) + '</span>';
+}
+function setVisible(el, show){
+  if (show){
+    if (el.style.display === "none") el.style.display = "";
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ el.classList.remove("is-hidden"); });
+    });
+  } else {
+    el.classList.add("is-hidden");
+    var onEnd = function(ev){
+      if (ev.propertyName === "opacity" && el.classList.contains("is-hidden")){
+        el.style.display = "none";
+      }
+      el.removeEventListener("transitionend", onEnd);
+    };
+    el.addEventListener("transitionend", onEnd);
+  }
+}
+function daysCountUp(el, days){
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce || days === 0){ el.textContent = String(days); return; }
+  var t0 = null;
+  function frame(ts){
+    if (!t0) t0 = ts;
+    var p = Math.min(1, (ts - t0) / 700);
+    var eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = String(Math.round(eased * days));
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Page navigation (hash-routed) ---------- */
+var VIEWS = ["home", "advisor", "classes", "literature", "journals", "pipelines"];
+var TITLES = {
+  home: "Dashboard", advisor: "Advisor", classes: "Classes",
+  literature: "Literature", journals: "Journals", pipelines: "Pipelines"
+};
+var writingFilled = false;
+
+function showView(name){
+  if (VIEWS.indexOf(name) === -1) name = "home";
+  VIEWS.forEach(function(v){
+    document.getElementById("view-" + v).classList.toggle("active", v === name);
+  });
+  document.querySelectorAll(".nav-btn").forEach(function(b){
+    b.classList.toggle("on", b.getAttribute("data-view") === name);
+  });
+  document.getElementById("main-title").textContent = TITLES[name];
+  window.scrollTo({ top: 0 });
+  if (name === "pipelines" && !writingFilled){
+    writingFilled = true;
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        document.querySelectorAll(".write-fill").forEach(function(f){
+          f.style.transform = "scaleX(" + (Number(f.getAttribute("data-p")) / 100) + ")";
+        });
+      });
+    });
+  }
+}
+
+document.querySelectorAll(".nav-btn").forEach(function(b){
+  b.addEventListener("click", function(){
+    var v = b.getAttribute("data-view");
+    if (("#" + v) !== location.hash) location.hash = v;
+    else showView(v);
+  });
+});
+window.addEventListener("hashchange", function(){
+  showView(location.hash.replace("#", ""));
+});
+
+/* Banner → Advisor page */
+document.getElementById("sentinel-banner").addEventListener("click", function(){
+  if (location.hash !== "#advisor") location.hash = "advisor";
+  else showView("advisor");
+});
+
+/* ---------- Header ---------- */
+function renderHeader(settings){
+  var now = new Date();
+  document.getElementById("today-date").textContent = now.toLocaleDateString(undefined, {
+    weekday: "short", month: "short", day: "numeric", year: "numeric"
+  });
+  if (settings.owner_name){
+    document.getElementById("greeting").textContent = settings.owner_name;
+  }
+}
+
+/* ---------- Sidebar Tools ---------- */
+function renderTools(data){
+  document.getElementById("side-tools").innerHTML = (data.tools || []).map(function(t){
+    var initials = String(t.label || "?").trim().split(/\s+/).slice(0, 2)
+      .map(function(w){ return w.charAt(0).toUpperCase(); }).join("");
+    return '<a class="side-tool" href="' + esc(t.url) + '" target="_blank" rel="noopener">' +
+      '<span class="tool-glyph">' + esc(initials) + '</span>' +
+      '<span>' + esc(t.label) +
+      (t.note ? '<span class="tool-note">' + esc(t.note) + '</span>' : "") + '</span>' +
+      '<svg class="arrow" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></a>';
+  }).join("");
+}
+
+/* ---------- Supervisor Sentinel (banner + Advisor page) ---------- */
+function renderSentinel(data){
+  var deliverable = data.deliverable || "No deliverable set";
+  var status = data.status || "Not Started";
+  var items = data.milestones || [];
+  var done = items.filter(function(m){ return m.done; }).length;
+  var progressText = done + " / " + items.length + " micro-milestones";
+
+  /* Banner (top of every page) */
+  document.getElementById("banner-deliverable").textContent = deliverable;
+  var bs = document.getElementById("banner-status");
+  bs.className = "badge " + badgeClass(status);
+  bs.innerHTML = '<span class="bd"></span>' + esc(status);
+  document.getElementById("banner-progress").textContent = progressText;
+
+  /* Advisor page card */
+  document.getElementById("sentinel-deliverable").textContent = deliverable;
+  var st = document.getElementById("sentinel-status");
+  st.className = "badge " + badgeClass(status);
+  st.innerHTML = '<span class="bd"></span>' + esc(status);
+
+  document.getElementById("sentinel-milestones").innerHTML = items.map(function(m){
+    return '<li class="milestone' + (m.done ? " done" : "") + '">' +
+      '<span class="tick"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span>' +
+      '<span class="m-text">' + esc(m.task) + '</span></li>';
+  }).join("");
+  document.getElementById("sentinel-progress").textContent = progressText + " cleared";
+
+  var log = esc(data.last_discussion || "No discussion logged yet. Use the button below to write your first advising note.")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .split(/\n{2,}/).map(function(p){ return "<p>" + p.replace(/\n/g, "<br>") + "</p>"; }).join("");
+  document.getElementById("log-body").innerHTML = log;
+
+  /* Days Active ticker (banner + Advisor page) */
+  var start = data.cycle_start ? new Date(data.cycle_start) : new Date();
+  var days = Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
+  daysCountUp(document.getElementById("days-active"), days);
+  daysCountUp(document.getElementById("days-active-full"), days);
+}
+
+/* ---------- Weekend + Daily Agenda + Week ---------- */
+var DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+function renderWeekModule(data){
+  /* This Weekend */
+  var weekend = data.weekend || [];
+  document.getElementById("weekend-body").innerHTML = weekend.map(function(it){
+    return '<div class="week-item"><span class="wi-name">' + esc(it.name) +
+      '</span><span class="date-tag">' + esc(it.when || "") + '</span></div>';
+  }).join("") || '<div class="lit-empty">Nothing planned for the weekend yet.</div>';
+
+  /* Daily Agenda: shows entries whose day matches today */
+  var todayName = DAY_NAMES[new Date().getDay()];
+  var todays = (data.agenda || []).filter(function(a){ return a.day === todayName; });
+  document.getElementById("agenda-body").innerHTML = todays.map(function(a){
+    return '<div class="agenda-item"><span class="agenda-time">' + esc(a.time || "—") + '</span>' +
+      '<span class="wi-name">' + esc(a.name) + '</span></div>';
+  }).join("") || '<div class="lit-empty">Nothing scheduled for ' + esc(todayName) + '. Enjoy the open runway.</div>';
+
+  /* This Week in a Nutshell */
+  function rows(list, nameKey, dateKey){
+    return (list || []).map(function(it){
+      return '<div class="week-item"><span class="wi-name">' + esc(it[nameKey]) +
+        '</span><span class="date-tag">' + esc(it[dateKey]) + '</span></div>';
+    }).join("") || '<div class="lit-empty">Nothing logged.</div>';
+  }
+  document.getElementById("week-body").innerHTML =
+    '<div class="week-group"><div class="week-label">Current Classes</div>' + rows(data.classes, "name", "meets") + '</div>' +
+    '<div class="week-group"><div class="week-label">Weekly Events</div>' + rows(data.events, "name", "when") + '</div>' +
+    '<div class="week-group"><div class="week-label">Immediate Deadlines</div>' + rows(data.deadlines, "name", "due") + '</div>';
+}
+
+/* Weekend toggle (state remembered on this device) */
+(function(){
+  var KEY = "scholar-command-weekend-open";
+  var btn = document.getElementById("weekend-toggle");
+  var panel = document.getElementById("weekend-panel");
+  var open = true;
+  try { open = localStorage.getItem(KEY) !== "false"; } catch(e){}
+  btn.setAttribute("aria-expanded", String(open));
+  panel.classList.toggle("open", open);
+  btn.addEventListener("click", function(){
+    open = !open;
+    btn.setAttribute("aria-expanded", String(open));
+    panel.classList.toggle("open", open);
+    try { localStorage.setItem(KEY, String(open)); } catch(e){}
+  });
+})();
+
+/* ---------- Scratchpad ---------- */
+var scratchStore = {
+  key: "scholar-command-scratchpad",
+  read: function(){
+    try { return JSON.parse(localStorage.getItem(this.key)) || []; }
+    catch(e){ return this.mem || []; }
+  },
+  write: function(items){
+    this.mem = items;
+    try { localStorage.setItem(this.key, JSON.stringify(items)); } catch(e){}
+  }
+};
+
+function renderScratch(){
+  var list = document.getElementById("scratch-list");
+  var input = document.getElementById("scratch-input");
+  var count = document.getElementById("scratch-count");
+  var items = scratchStore.read();
+
+  function updateCount(){
+    var open = items.filter(function(i){ return !i.done; }).length;
+    count.textContent = items.length ? open + " open" : "";
+  }
+
+  function makeNode(item, animateIn){
+    var li = document.createElement("li");
+    li.className = "scratch-item" + (item.done ? " done" : "") + (animateIn ? " entering" : "");
+    li.innerHTML =
+      '<input type="checkbox" class="scratch-check"' + (item.done ? " checked" : "") + ' aria-label="Mark done">' +
+      '<span class="scratch-text">' + esc(item.text) + '</span>' +
+      '<button class="scratch-del" aria-label="Delete item">&times;</button>';
+    li.querySelector(".scratch-check").addEventListener("change", function(){
+      item.done = this.checked;
+      li.classList.toggle("done", item.done);
+      scratchStore.write(items);
+      updateCount();
+    });
+    li.querySelector(".scratch-del").addEventListener("click", function(){
+      li.classList.add("leaving");
+      setTimeout(function(){
+        items.splice(items.indexOf(item), 1);
+        scratchStore.write(items);
+        li.remove();
+        updateCount();
+      }, 240);
+    });
+    if (animateIn){
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){ li.classList.remove("entering"); });
+      });
+    }
+    return li;
+  }
+
+  items.forEach(function(it){ list.appendChild(makeNode(it, false)); });
+  updateCount();
+
+  input.addEventListener("keydown", function(e){
+    if (e.key !== "Enter") return;
+    var text = input.value.trim();
+    if (!text) return;
+    var item = { text: text, done: false };
+    items.push(item);
+    scratchStore.write(items);
+    list.appendChild(makeNode(item, true));
+    input.value = "";
+    updateCount();
+  });
+}
+
+/* ---------- Calendar ---------- */
+function renderCalendar(settings){
+  var slot = document.getElementById("cal-slot");
+  if (settings.calendar_embed){
+    slot.innerHTML = '<iframe class="cal-frame" src="' + esc(settings.calendar_embed) +
+      '" title="Month calendar" loading="lazy"></iframe>';
+  } else {
+    slot.innerHTML = '<div class="cal-placeholder">' +
+      '<strong>Calendar embed not configured yet.</strong><br><br>' +
+      'Paste your Google Calendar or Notion calendar embed URL into ' +
+      '<code>Edit &rarr; Calendar Embed URL</code> ' +
+      'and the full-month view will render here.</div>';
+  }
+}
+
+/* ---------- Roadmap ---------- */
+function renderRoadmap(data){
+  var stateClass = { "Completed": "completed", "Active Focus": "active", "Future": "future" };
+  var stateBadge = { "Completed": "badge-green", "Active Focus": "badge-violet", "Future": "badge-gray" };
+  document.getElementById("roadmap").innerHTML = (data.milestones || []).map(function(m){
+    var cls = stateClass[m.state] || "future";
+    return '<li class="rm-item ' + cls + '">' +
+      '<span class="rm-node" aria-hidden="true"></span>' +
+      '<div class="rm-title">' + esc(m.title) + '</div>' +
+      (m.note ? '<div class="rm-note">' + esc(m.note) + '</div>' : "") +
+      '<div class="rm-state"><span class="badge ' + (stateBadge[m.state] || "badge-gray") + '"><span class="bd"></span>' + esc(m.state || "Future") + '</span></div>' +
+      '</li>';
+  }).join("");
+}
+
+/* ---------- Class Repository ---------- */
+function renderCourses(data){
+  var grid = document.getElementById("course-grid");
+  var courses = data.courses || [];
+  document.getElementById("courses-count").textContent = courses.length + " courses";
+  grid.innerHTML = courses.map(function(c, i){
+    var mats = (c.materials || []).map(function(m){
+      var href = m.file || m.link || "#";
+      return '<li class="material"><span class="mat-kind">' + esc(m.kind || "FILE") + '</span>' +
+        '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(m.label) + '</a></li>';
+    }).join("");
+    return '<div class="course" role="button" tabindex="0" aria-expanded="false" data-course="' + i + '">' +
+      '<div class="course-code">' + esc(c.code || "") + '</div>' +
+      '<div class="course-title">' + esc(c.title) + '</div>' +
+      '<div class="course-term">' + esc(c.term || "") + '</div>' +
+      '<div class="course-meta"><span class="course-count">' + (c.materials || []).length + ' items</span>' +
+      '<svg class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>' +
+      '<div class="collapse"><div class="collapse-inner"><ul class="materials">' + mats + '</ul></div></div>' +
+      '</div>';
+  }).join("");
+
+  grid.querySelectorAll(".course").forEach(function(card){
+    function toggle(){
+      var open = card.getAttribute("aria-expanded") === "true";
+      card.setAttribute("aria-expanded", String(!open));
+      card.querySelector(".collapse").classList.toggle("open", !open);
+    }
+    card.addEventListener("click", function(e){
+      if (e.target.closest("a")) return;
+      toggle();
+    });
+    card.addEventListener("keydown", function(e){
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(); }
+    });
+  });
+}
+
+/* ---------- Journals ---------- */
+function renderJournals(data){
+  document.getElementById("journal-list").innerHTML = (data.journals || []).map(function(j){
+    return '<div class="journal">' +
+      '<div class="journal-name">' + esc(j.name) + '</div>' +
+      '<div class="journal-focus">' + esc(j.focus || "") + '</div>' +
+      '<a class="journal-link" href="' + esc(j.guidelines || "#") + '" target="_blank" rel="noopener">Submission Guidelines' +
+      '<svg class="arrow" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></a>' +
+      '</div>';
+  }).join("");
+}
+
+/* ---------- Literature ---------- */
+function renderLiterature(data){
+  var entries = data.entries || [];
+  var queueEl = document.getElementById("lit-queue");
+  var archEl  = document.getElementById("lit-archive");
+  var railEl  = document.getElementById("tag-rail");
+  var noteEl  = document.getElementById("lit-filter-note");
+
+  var allTags = [];
+  entries.forEach(function(e){
+    (e.tags || []).forEach(function(t){ if (allTags.indexOf(t) === -1) allTags.push(t); });
+  });
+  allTags.sort();
+
+  function entryHTML(e){
+    var tags = (e.tags || []).map(function(t){
+      return '<button class="lit-tag" data-tag="' + esc(t) + '">' + esc(t) + '</button>';
+    }).join("");
+    var files = "";
+    if (e.pdf)   files += '<a href="' + esc(e.pdf)   + '" target="_blank" rel="noopener">PDF</a>';
+    if (e.media) files += '<a href="' + esc(e.media) + '" target="_blank" rel="noopener">Media</a>';
+    return '<div class="lit-entry" data-tags="' + esc((e.tags || []).join("|")) + '">' +
+      '<div class="lit-top"><span class="lit-title">' + esc(e.title) + '</span>' +
+      '<span class="lit-year">' + esc(e.year || "") + '</span></div>' +
+      (tags ? '<div class="lit-tags">' + tags + '</div>' : "") +
+      (e.summary ? '<div class="lit-summary">' + esc(e.summary) + '</div>' : "") +
+      (files ? '<div class="lit-files">' + files + '</div>' : "") +
+      '</div>';
+  }
+
+  var queue = entries.filter(function(e){ return e.status !== "Read"; });
+  var read  = entries.filter(function(e){ return e.status === "Read"; });
+  queueEl.innerHTML = queue.map(entryHTML).join("") || '<div class="lit-empty">Queue is clear.</div>';
+  archEl.innerHTML  = read.map(entryHTML).join("")  || '<div class="lit-empty">Nothing archived yet.</div>';
+
+  railEl.innerHTML = '<button class="tag on" data-tag="">All</button>' + allTags.map(function(t){
+    return '<button class="tag" data-tag="' + esc(t) + '">' + esc(t) + '</button>';
+  }).join("");
+
+  function applyFilter(tag){
+    railEl.querySelectorAll(".tag").forEach(function(b){
+      b.classList.toggle("on", (b.getAttribute("data-tag") || "") === (tag || ""));
+    });
+    document.querySelectorAll(".lit-entry").forEach(function(el){
+      var tags = (el.getAttribute("data-tags") || "").split("|");
+      setVisible(el, !tag || tags.indexOf(tag) !== -1);
+    });
+    noteEl.textContent = tag ? 'filtering: "' + tag + '"' : "";
+  }
+
+  railEl.addEventListener("click", function(e){
+    var b = e.target.closest(".tag");
+    if (b) applyFilter(b.getAttribute("data-tag") || "");
+  });
+  document.querySelectorAll(".lit-tag").forEach(function(b){
+    b.addEventListener("click", function(){ applyFilter(b.getAttribute("data-tag")); });
+  });
+}
+
+/* ---------- Writing Progress Matrix ---------- */
+function renderWriting(data){
+  document.getElementById("writing-project").textContent = data.project || "Current Writing Project";
+  document.getElementById("writing-phase").textContent = data.phase || "";
+  document.getElementById("write-rows").innerHTML = (data.sections || []).map(function(s){
+    var p = Math.max(0, Math.min(100, Number(s.progress) || 0));
+    return '<div class="write-row"><span class="write-name">' + esc(s.name) + '</span>' +
+      '<div class="write-track"><div class="write-fill" data-p="' + p + '"></div></div>' +
+      '<span class="write-pct">' + p + '%</span></div>';
+  }).join("");
+  if (document.getElementById("view-pipelines").classList.contains("active")){
+    writingFilled = true;
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        document.querySelectorAll(".write-fill").forEach(function(f){
+          f.style.transform = "scaleX(" + (Number(f.getAttribute("data-p")) / 100) + ")";
+        });
+      });
+    });
+  }
+}
+
+/* ---------- Advancement Pipelines ---------- */
+function pipeItem(name, sub, foot){
+  return '<div class="pipe-item">' +
+    '<div class="pipe-item-name">' + name + '</div>' +
+    (sub ? '<div class="pipe-item-sub">' + sub + '</div>' : "") +
+    '<div class="pipe-item-foot">' + foot + '</div></div>';
+}
+function renderPipelines(data){
+  var s = data.submissions || [], c = data.conferences || [], g = data.grants || [], p = data.programs || [];
+
+  document.getElementById("pipe-submissions").innerHTML = s.map(function(it){
+    return pipeItem(esc(it.title), esc(it.journal || ""), badge(it.status || "Drafting"));
+  }).join("") || '<div class="lit-empty">No submissions tracked.</div>';
+
+  document.getElementById("pipe-conferences").innerHTML = c.map(function(it){
+    var role = it.attendance === "Presenting" ?
+      '<span class="badge badge-violet"><span class="bd"></span>Presenting</span>' :
+      '<span class="badge badge-gray"><span class="bd"></span>Spectator</span>';
+    return pipeItem(esc(it.name),
+      '<span class="date-tag">' + esc(it.date || "") + '</span>',
+      role + badge(it.status || "Planned"));
+  }).join("") || '<div class="lit-empty">No conferences tracked.</div>';
+
+  document.getElementById("pipe-grants").innerHTML = g.map(function(it){
+    return pipeItem(esc(it.name),
+      esc(it.sponsor || "") + (it.deadline ? ' · <span class="date-tag">due ' + esc(it.deadline) + '</span>' : ""),
+      badge(it.status || "Scouting"));
+  }).join("") || '<div class="lit-empty">No grants tracked.</div>';
+
+  document.getElementById("pipe-programs").innerHTML = p.map(function(it){
+    return pipeItem(esc(it.name),
+      esc(it.org || "") + (it.note ? " · " + esc(it.note) : ""),
+      badge(it.status || "Watching"));
+  }).join("") || '<div class="lit-empty">No opportunities tracked.</div>';
+
+  document.getElementById("count-submissions").textContent = s.length;
+  document.getElementById("count-conferences").textContent = c.length;
+  document.getElementById("count-grants").textContent = g.length;
+  document.getElementById("count-programs").textContent = p.length;
+}
+
+/* ---------- Discussion log toggle ---------- */
+document.getElementById("log-toggle").addEventListener("click", function(){
+  var open = this.getAttribute("aria-expanded") === "true";
+  this.setAttribute("aria-expanded", String(!open));
+  document.getElementById("log-panel").classList.toggle("open", !open);
+});
+
+/* ---------- Boot ---------- */
+showView(location.hash.replace("#", "") || "home");
+
+Promise.all([
+  loadJSON("content/data/settings.json",   SEEDS.settings),
+  loadJSON("content/data/tools.json",      SEEDS.tools),
+  loadJSON("content/data/supervisor.json", SEEDS.supervisor),
+  loadJSON("content/data/week.json",       SEEDS.week),
+  loadJSON("content/data/roadmap.json",    SEEDS.roadmap),
+  loadJSON("content/data/courses.json",    SEEDS.courses),
+  loadJSON("content/data/journals.json",   SEEDS.journals),
+  loadJSON("content/data/literature.json", SEEDS.literature),
+  loadJSON("content/data/writing.json",    SEEDS.writing),
+  loadJSON("content/data/pipelines.json",  SEEDS.pipelines)
+]).then(function(d){
+  renderHeader(d[0]);
+  renderTools(d[1]);
+  renderSentinel(d[2]);
+  renderWeekModule(d[3]);
+  renderCalendar(d[0]);
+  renderRoadmap(d[4]);
+  renderCourses(d[5]);
+  renderJournals(d[6]);
+  renderLiterature(d[7]);
+  renderWriting(d[8]);
+  renderPipelines(d[9]);
+});
+
+renderScratch();
+})();
+</script>
+</body>
+</html>

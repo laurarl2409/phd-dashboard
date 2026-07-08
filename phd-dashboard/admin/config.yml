@@ -1,0 +1,313 @@
+# =====================================================================
+# Scholar Command — Decap CMS configuration
+# Built on the decap_base.txt scaffolding. Every dashboard module maps
+# to a JSON data file under /content/data/, which the frontend
+# (index.html at the site root, per system_routing.txt) fetches at load.
+# Media and PDF uploads save to /assets/ automatically.
+# =====================================================================
+
+backend:
+  name: git-gateway
+  branch: main
+
+# Allows running "npx decap-server" locally for offline editing.
+local_backend: true
+
+media_folder: "assets"
+public_folder: "/assets"
+
+collections:
+  # ===================================================================
+  # ALL DASHBOARD MODULES — one entry per widget on the dashboard
+  # ===================================================================
+  - name: "dashboard"
+    label: "Dashboard Modules"
+    files:
+
+      # ---------------------------------------------------------------
+      # Global settings: greeting, tagline, calendar embed
+      # ---------------------------------------------------------------
+      - name: "settings"
+        label: "Dashboard Settings"
+        file: "content/data/settings.json"
+        fields:
+          - { label: "Owner Name", name: "owner_name", widget: "string", default: "Doctoral Candidate" }
+          - { label: "Tagline", name: "tagline", widget: "string", default: "PhD Academic Dashboard", required: false }
+          - label: "Calendar Embed URL"
+            name: "calendar_embed"
+            widget: "string"
+            required: false
+            hint: "Paste the src URL of your Google Calendar or Notion calendar embed. Leave empty to show setup instructions on the dashboard."
+
+      # ---------------------------------------------------------------
+      # Tools: quick launchers (Notion, Zotero, Research Rabbit,
+      # Gemini) AND published Claude artifacts, unified in one list.
+      # Just add a label and a link.
+      # ---------------------------------------------------------------
+      - name: "tools"
+        label: "Tools"
+        file: "content/data/tools.json"
+        fields:
+          - label: "Tools"
+            name: "tools"
+            widget: "list"
+            summary: "{{fields.label}}"
+            fields:
+              - { label: "Label", name: "label", widget: "string" }
+              - { label: "URL", name: "url", widget: "string", hint: "External app or your published claude.site artifact link" }
+              - { label: "Note", name: "note", widget: "string", required: false, hint: "Optional small caption, e.g. 'Claude artifact' or 'References'" }
+
+      # ---------------------------------------------------------------
+      # Supervisor Sentinel: advisor deliverable, status, milestones,
+      # last discussion log, and the Days Active start date
+      # ---------------------------------------------------------------
+      - name: "supervisor"
+        label: "Supervisor Sentinel"
+        file: "content/data/supervisor.json"
+        fields:
+          - { label: "Current Advisor Deliverable", name: "deliverable", widget: "string" }
+          - label: "Status"
+            name: "status"
+            widget: "select"
+            options: ["Not Started", "In Progress", "Sent for Review", "Ready for Meeting"]
+            default: "Not Started"
+          - label: "Cycle Start Date"
+            name: "cycle_start"
+            widget: "datetime"
+            hint: "The Days Active ticker counts from this date. Reset it when a new deliverable cycle begins."
+          - label: "Micro-Milestones"
+            name: "milestones"
+            widget: "list"
+            summary: "{{fields.task}}"
+            fields:
+              - { label: "Task", name: "task", widget: "string" }
+              - { label: "Done", name: "done", widget: "boolean", default: false }
+          - label: "Last Discussion Log"
+            name: "last_discussion"
+            widget: "text"
+            required: false
+            hint: "Summary of terms from the previous advising session. Wrap key phrases in **double asterisks** to highlight them on the dashboard."
+
+      # ---------------------------------------------------------------
+      # This Week in a Nutshell: classes, events, deadlines
+      # ---------------------------------------------------------------
+      - name: "week"
+        label: "This Week in a Nutshell"
+        file: "content/data/week.json"
+        fields:
+          - label: "Current Classes"
+            name: "classes"
+            widget: "list"
+            summary: "{{fields.name}}"
+            fields:
+              - { label: "Class", name: "name", widget: "string" }
+              - { label: "Meets", name: "meets", widget: "string", hint: "e.g. Tue 2:00 PM" }
+          - label: "Weekly Events"
+            name: "events"
+            widget: "list"
+            summary: "{{fields.name}}"
+            fields:
+              - { label: "Event", name: "name", widget: "string" }
+              - { label: "When", name: "when", widget: "string" }
+          - label: "Immediate Deadlines"
+            name: "deadlines"
+            widget: "list"
+            summary: "{{fields.name}}"
+            fields:
+              - { label: "Deadline", name: "name", widget: "string" }
+              - { label: "Due", name: "due", widget: "string", hint: "e.g. Fri Jul 10" }
+
+      # ---------------------------------------------------------------
+      # Milestone Roadmap: institutional hurdles with state
+      # ---------------------------------------------------------------
+      - name: "roadmap"
+        label: "Milestone Roadmap"
+        file: "content/data/roadmap.json"
+        fields:
+          - label: "Institutional Milestones"
+            name: "milestones"
+            widget: "list"
+            summary: "{{fields.title}} — {{fields.state}}"
+            fields:
+              - { label: "Milestone", name: "title", widget: "string" }
+              - label: "State"
+                name: "state"
+                widget: "select"
+                options: ["Future", "Active Focus", "Completed"]
+                default: "Future"
+              - { label: "Note", name: "note", widget: "string", required: false }
+
+      # ---------------------------------------------------------------
+      # Class Repository: courses with expandable materials
+      # ---------------------------------------------------------------
+      - name: "courses"
+        label: "Class Repository"
+        file: "content/data/courses.json"
+        fields:
+          - label: "Courses"
+            name: "courses"
+            widget: "list"
+            summary: "{{fields.code}} · {{fields.title}}"
+            fields:
+              - { label: "Course Code", name: "code", widget: "string", hint: "e.g. EDU 801" }
+              - { label: "Course Title", name: "title", widget: "string" }
+              - { label: "Term", name: "term", widget: "string", required: false }
+              - label: "Materials"
+                name: "materials"
+                widget: "list"
+                required: false
+                summary: "{{fields.label}}"
+                fields:
+                  - { label: "Label", name: "label", widget: "string" }
+                  - label: "Kind"
+                    name: "kind"
+                    widget: "select"
+                    options: ["Notes", "PDF", "Slides", "Project"]
+                    default: "Notes"
+                  - label: "Upload File"
+                    name: "file"
+                    widget: "file"
+                    required: false
+                    hint: "PDFs, slides, and docs save to /assets/ automatically."
+                  - { label: "External Link", name: "link", widget: "string", required: false, hint: "Used if no file is uploaded." }
+
+      # ---------------------------------------------------------------
+      # Target Journal Directory
+      # ---------------------------------------------------------------
+      - name: "journals"
+        label: "Target Journal Directory"
+        file: "content/data/journals.json"
+        fields:
+          - label: "Journals"
+            name: "journals"
+            widget: "list"
+            summary: "{{fields.name}}"
+            fields:
+              - { label: "Journal Name", name: "name", widget: "string" }
+              - { label: "Focus / Aims", name: "focus", widget: "text", required: false }
+              - { label: "Submission Guidelines Link", name: "guidelines", widget: "string" }
+
+      # ---------------------------------------------------------------
+      # Literature Queue & Reading Log
+      # ---------------------------------------------------------------
+      - name: "literature"
+        label: "Literature Queue & Reading Log"
+        file: "content/data/literature.json"
+        fields:
+          - label: "Entries"
+            name: "entries"
+            widget: "list"
+            summary: "{{fields.title}} ({{fields.status}})"
+            fields:
+              - { label: "Title", name: "title", widget: "string" }
+              - { label: "Year", name: "year", widget: "number", value_type: "int", required: false }
+              - label: "Status"
+                name: "status"
+                widget: "select"
+                options: ["To-Read", "Read"]
+                default: "To-Read"
+                hint: "To-Read shows in the Queue (Inbox); Read moves it to the Archive (Vault)."
+              - label: "Keyword Tags"
+                name: "tags"
+                widget: "list"
+                required: false
+                field: { label: "Tag", name: "tag", widget: "string" }
+                hint: "Tags become clickable filter badges on the dashboard."
+              - label: "PDF Upload"
+                name: "pdf"
+                widget: "file"
+                required: false
+                hint: "Saves to /assets/ automatically."
+              - label: "Extra Media Upload"
+                name: "media"
+                widget: "file"
+                required: false
+                hint: "Slides, graphics, or supplementary files."
+              - { label: "Summary", name: "summary", widget: "text", required: false }
+
+      # ---------------------------------------------------------------
+      # Advancement Pipelines: submissions, conferences, grants, programs
+      # ---------------------------------------------------------------
+      - name: "pipelines"
+        label: "Advancement Pipelines"
+        file: "content/data/pipelines.json"
+        fields:
+          - label: "Journal Submissions"
+            name: "submissions"
+            widget: "list"
+            required: false
+            summary: "{{fields.title}} — {{fields.status}}"
+            fields:
+              - { label: "Manuscript Title", name: "title", widget: "string" }
+              - { label: "Journal", name: "journal", widget: "string", required: false }
+              - label: "Status"
+                name: "status"
+                widget: "select"
+                options: ["Drafting", "Submitted", "Under Review", "Revise & Resubmit", "Accepted", "Rejected"]
+                default: "Drafting"
+          - label: "Conferences"
+            name: "conferences"
+            widget: "list"
+            required: false
+            summary: "{{fields.name}} — {{fields.attendance}}"
+            fields:
+              - { label: "Conference", name: "name", widget: "string" }
+              - { label: "Date", name: "date", widget: "string", required: false, hint: "e.g. Apr 2027" }
+              - label: "Attendance"
+                name: "attendance"
+                widget: "select"
+                options: ["Presenting", "Spectator"]
+                default: "Spectator"
+              - label: "Status"
+                name: "status"
+                widget: "select"
+                options: ["Planned", "Abstract Submitted", "Accepted", "Attended", "Declined"]
+                default: "Planned"
+          - label: "Grants"
+            name: "grants"
+            widget: "list"
+            required: false
+            summary: "{{fields.name}} — {{fields.status}}"
+            fields:
+              - { label: "Grant", name: "name", widget: "string" }
+              - { label: "Sponsor", name: "sponsor", widget: "string", required: false }
+              - { label: "Deadline", name: "deadline", widget: "string", required: false, hint: "e.g. Oct 2026" }
+              - label: "Status"
+                name: "status"
+                widget: "select"
+                options: ["Scouting", "Drafting", "Submitted", "Awarded", "Declined"]
+                default: "Scouting"
+          - label: "Programs & Misc Opportunities"
+            name: "programs"
+            widget: "list"
+            required: false
+            summary: "{{fields.name}} — {{fields.status}}"
+            fields:
+              - { label: "Opportunity", name: "name", widget: "string" }
+              - { label: "Organization", name: "org", widget: "string", required: false }
+              - label: "Status"
+                name: "status"
+                widget: "select"
+                options: ["Watching", "Applied", "Accepted", "Completed", "Declined"]
+                default: "Watching"
+              - { label: "Note", name: "note", widget: "string", required: false }
+
+      # ---------------------------------------------------------------
+      # Writing Progress Matrix
+      # ---------------------------------------------------------------
+      - name: "writing"
+        label: "Writing Progress Matrix"
+        file: "content/data/writing.json"
+        fields:
+          - label: "Current Major Project"
+            name: "project"
+            widget: "string"
+            hint: "Qualifying Paper while pre-candidate; switch to your Dissertation upon candidacy."
+          - { label: "Phase Note", name: "phase", widget: "string", required: false, hint: "Shown under the project title, e.g. Pre-Candidacy." }
+          - label: "Sections / Chapters"
+            name: "sections"
+            widget: "list"
+            summary: "{{fields.name}} — {{fields.progress}}%"
+            fields:
+              - { label: "Section or Chapter", name: "name", widget: "string" }
+              - { label: "Progress (0–100)", name: "progress", widget: "number", value_type: "int", min: 0, max: 100, default: 0 }
