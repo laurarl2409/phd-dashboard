@@ -1,9 +1,12 @@
 # =====================================================================
-# Scholar Command — Decap CMS configuration
+# Scholar Command — Decap CMS configuration (live-data edition)
 # Built on the decap_base.txt scaffolding. Every dashboard module maps
 # to a JSON data file under /content/data/, which the frontend
-# (index.html at the site root, per system_routing.txt) fetches at load.
-# Media and PDF uploads save to /assets/ automatically.
+# (index.html at the site root, per system_routing.txt) fetches on
+# every load — so a change saved here appears on the dashboard as soon
+# as Netlify finishes its rebuild. Media and PDF uploads (course files,
+# full-text papers, graphics, guidelines packets, voice memos) save to
+# /assets/ automatically.
 # =====================================================================
 
 backend:
@@ -25,7 +28,9 @@ collections:
     files:
 
       # ---------------------------------------------------------------
-      # Global settings: greeting, tagline, calendar embed
+      # Global settings: greeting + the single calendar feed that
+      # powers the Month Calendar, This Week in a Nutshell, and the
+      # Daily Agenda simultaneously.
       # ---------------------------------------------------------------
       - name: "settings"
         label: "Dashboard Settings"
@@ -33,16 +38,23 @@ collections:
         fields:
           - { label: "Owner Name", name: "owner_name", widget: "string", default: "Doctoral Candidate" }
           - { label: "Tagline", name: "tagline", widget: "string", default: "PhD Academic Dashboard", required: false }
-          - label: "Calendar Embed URL"
-            name: "calendar_embed"
+          - label: "Calendar Feed URL"
+            name: "calendar_feed"
             widget: "string"
             required: false
-            hint: "Paste the src URL of your Google Calendar or Notion calendar embed. Leave empty to show setup instructions on the dashboard."
+            hint: >-
+              One public calendar link powers all three widgets (month grid,
+              7-day summary, daily agenda). Best option: the calendar's public
+              ICS address — in Google Calendar open Settings for the calendar,
+              make it public, and copy "Public address in iCal format"
+              (ends in .ics). A Google embed URL also works: the dashboard
+              extracts the feed from it automatically. Notion calendars: use
+              their published ICS link.
 
       # ---------------------------------------------------------------
       # Tools: quick launchers (Notion, Zotero, Research Rabbit,
-      # Gemini) AND published Claude artifacts, unified in one list.
-      # Just add a label and a link.
+      # Gemini) AND published Claude artifacts, unified in one list
+      # shown in the left navigation pane.
       # ---------------------------------------------------------------
       - name: "tools"
         label: "Tools"
@@ -59,7 +71,7 @@ collections:
 
       # ---------------------------------------------------------------
       # Supervisor Sentinel: advisor deliverable, status, milestones,
-      # last discussion log, and the Days Active start date
+      # last discussion log, voice memo, and the Days Active start date
       # ---------------------------------------------------------------
       - name: "supervisor"
         label: "Supervisor Sentinel"
@@ -86,39 +98,23 @@ collections:
             name: "last_discussion"
             widget: "text"
             required: false
-            hint: "Summary of terms from the previous advising session. Wrap key phrases in **double asterisks** to highlight them on the dashboard."
+            hint: >-
+              Summary of terms from the previous advising session. Markdown
+              works: **bold** for key phrases, - for bullet lists, blank
+              lines for paragraphs.
+          - label: "Voice Memo"
+            name: "voice_note"
+            widget: "file"
+            required: false
+            hint: >-
+              Attach a recorded meeting recap. Record it right on the Advisor
+              page with the microphone button, download the file, and upload
+              it here — it plays back above the discussion log.
 
       # ---------------------------------------------------------------
-      # This Week in a Nutshell: classes, events, deadlines
-      # ---------------------------------------------------------------
-      - name: "week"
-        label: "This Week in a Nutshell"
-        file: "content/data/week.json"
-        fields:
-          - label: "Current Classes"
-            name: "classes"
-            widget: "list"
-            summary: "{{fields.name}}"
-            fields:
-              - { label: "Class", name: "name", widget: "string" }
-              - { label: "Meets", name: "meets", widget: "string", hint: "e.g. Tue 2:00 PM" }
-          - label: "Weekly Events"
-            name: "events"
-            widget: "list"
-            summary: "{{fields.name}}"
-            fields:
-              - { label: "Event", name: "name", widget: "string" }
-              - { label: "When", name: "when", widget: "string" }
-          - label: "Immediate Deadlines"
-            name: "deadlines"
-            widget: "list"
-            summary: "{{fields.name}}"
-            fields:
-              - { label: "Deadline", name: "name", widget: "string" }
-              - { label: "Due", name: "due", widget: "string", hint: "e.g. Fri Jul 10" }
-
-      # ---------------------------------------------------------------
-      # Milestone Roadmap: institutional hurdles with state
+      # Milestone Roadmap: the academic progress highway. Each node can
+      # carry a target date, a note, and its own sub-task checklist,
+      # all shown in the slide-down detail pane.
       # ---------------------------------------------------------------
       - name: "roadmap"
         label: "Milestone Roadmap"
@@ -135,10 +131,21 @@ collections:
                 widget: "select"
                 options: ["Future", "Active Focus", "Completed"]
                 default: "Future"
+              - { label: "Target / Execution Date", name: "date", widget: "string", required: false, hint: "e.g. Spring 2027 or Oct 15, 2026" }
               - { label: "Note", name: "note", widget: "string", required: false }
+              - label: "Sub-Tasks"
+                name: "subtasks"
+                widget: "list"
+                required: false
+                summary: "{{fields.task}}"
+                fields:
+                  - { label: "Task", name: "task", widget: "string" }
+                  - { label: "When", name: "when", widget: "string", required: false, hint: "Optional date or window, e.g. 'by Aug 1'" }
+                  - { label: "Done", name: "done", widget: "boolean", default: false }
 
       # ---------------------------------------------------------------
-      # Class Repository: courses with expandable materials
+      # Class Repository: the course drive. Every material is filed
+      # into one of three folders shown in the course workspace drawer.
       # ---------------------------------------------------------------
       - name: "courses"
         label: "Class Repository"
@@ -156,13 +163,18 @@ collections:
                 name: "materials"
                 widget: "list"
                 required: false
-                summary: "{{fields.label}}"
+                summary: "{{fields.folder}} — {{fields.label}}"
                 fields:
                   - { label: "Label", name: "label", widget: "string" }
+                  - label: "Folder"
+                    name: "folder"
+                    widget: "select"
+                    options: ["Lectures & Slides", "Assignments & Coding", "Core Readings"]
+                    default: "Lectures & Slides"
                   - label: "Kind"
                     name: "kind"
                     widget: "select"
-                    options: ["Notes", "PDF", "Slides", "Project"]
+                    options: ["Notes", "PDF", "Slides", "Project", "Code", "Paper"]
                     default: "Notes"
                   - label: "Upload File"
                     name: "file"
@@ -172,7 +184,8 @@ collections:
                   - { label: "External Link", name: "link", widget: "string", required: false, hint: "Used if no file is uploaded." }
 
       # ---------------------------------------------------------------
-      # Target Journal Directory
+      # Target Journal Directory: deep aim profiles opened from the
+      # journal library rows.
       # ---------------------------------------------------------------
       - name: "journals"
         label: "Target Journal Directory"
@@ -184,11 +197,24 @@ collections:
             summary: "{{fields.name}}"
             fields:
               - { label: "Journal Name", name: "name", widget: "string" }
-              - { label: "Focus / Aims", name: "focus", widget: "text", required: false }
-              - { label: "Submission Guidelines Link", name: "guidelines", widget: "string" }
+              - { label: "Focus", name: "focus", widget: "text", required: false, hint: "One-line focus shown in the library row." }
+              - label: "Technical Aims & Scope"
+                name: "aims"
+                widget: "text"
+                required: false
+                hint: "Longer aims description shown in the profile drawer. Markdown supported."
+              - { label: "Accepted Word Limit", name: "word_limit", widget: "string", required: false, hint: "e.g. 9,000 words incl. references" }
+              - { label: "Review Frequency", name: "review_time", widget: "string", required: false, hint: "e.g. First decision in ~90 days" }
+              - { label: "Submission Guidelines Link", name: "guidelines", widget: "string", required: false }
+              - label: "Guidelines Packet (PDF)"
+                name: "pdf_packet"
+                widget: "file"
+                required: false
+                hint: "Upload the journal's PDF guidelines packet for instant review from the profile drawer."
 
       # ---------------------------------------------------------------
-      # Literature Queue & Reading Log
+      # Literature Queue & Reading Log: the reading vault. Dragging a
+      # card between columns on the dashboard flips this Status field.
       # ---------------------------------------------------------------
       - name: "literature"
         label: "Literature Queue & Reading Log"
@@ -200,33 +226,43 @@ collections:
             summary: "{{fields.title}} ({{fields.status}})"
             fields:
               - { label: "Title", name: "title", widget: "string" }
+              - { label: "Author(s)", name: "author", widget: "string", required: false, hint: "e.g. Braun & Clarke" }
               - { label: "Year", name: "year", widget: "number", value_type: "int", required: false }
               - label: "Status"
                 name: "status"
                 widget: "select"
                 options: ["To-Read", "Read"]
                 default: "To-Read"
-                hint: "To-Read shows in the Queue (Inbox); Read moves it to the Archive (Vault)."
+                hint: "To-Read shows in the Queue (Inbox); Read moves it to the Archive (Vault). Dragging the card on the dashboard also flips this."
               - label: "Keyword Tags"
                 name: "tags"
                 widget: "list"
                 required: false
                 field: { label: "Tag", name: "tag", widget: "string" }
-                hint: "Tags become clickable filter badges on the dashboard."
-              - label: "PDF Upload"
+                hint: "Tags are searchable from the live filter bar."
+              - { label: "Summary", name: "summary", widget: "text", required: false, hint: "Short abstract shown on the card." }
+              - label: "Running Notes"
+                name: "notes"
+                widget: "markdown"
+                required: false
+                hint: "Your workspace for running notes, summaries, and citations — rendered in the reading drawer."
+              - label: "Full-Text PDF"
                 name: "pdf"
                 widget: "file"
                 required: false
-                hint: "Saves to /assets/ automatically."
-              - label: "Extra Media Upload"
+                hint: "Saves to /assets/; opens from the card's workspace drawer."
+              - label: "Attached Graphics"
                 name: "media"
-                widget: "file"
+                widget: "list"
                 required: false
-                hint: "Slides, graphics, or supplementary files."
-              - { label: "Summary", name: "summary", widget: "text", required: false }
+                summary: "Graphic"
+                field: { label: "Image", name: "image", widget: "image" }
+                hint: "Regression tables, data charts, or layout snips — displayed in the workspace drawer."
 
       # ---------------------------------------------------------------
-      # Advancement Pipelines: submissions, conferences, grants, programs
+      # Advancement Pipelines: every entry carries its own operational
+      # dates, execution checklist, and reference draft file, shown in
+      # the entry's execution profile drawer.
       # ---------------------------------------------------------------
       - name: "pipelines"
         label: "Advancement Pipelines"
@@ -245,6 +281,27 @@ collections:
                 widget: "select"
                 options: ["Drafting", "Submitted", "Under Review", "Revise & Resubmit", "Accepted", "Rejected"]
                 default: "Drafting"
+              - label: "Operational Dates"
+                name: "dates"
+                widget: "list"
+                required: false
+                summary: "{{fields.label}}: {{fields.when}}"
+                fields:
+                  - { label: "Label", name: "label", widget: "string", hint: "e.g. Submitted on / Decision expected" }
+                  - { label: "When", name: "when", widget: "string" }
+              - label: "Execution Checklist"
+                name: "subtasks"
+                widget: "list"
+                required: false
+                summary: "{{fields.task}}"
+                fields:
+                  - { label: "Task", name: "task", widget: "string" }
+                  - { label: "Done", name: "done", widget: "boolean", default: false }
+              - label: "Reference Draft"
+                name: "ref"
+                widget: "file"
+                required: false
+                hint: "The manuscript draft file this submission refers to."
           - label: "Conferences"
             name: "conferences"
             widget: "list"
@@ -252,7 +309,7 @@ collections:
             summary: "{{fields.name}} — {{fields.attendance}}"
             fields:
               - { label: "Conference", name: "name", widget: "string" }
-              - { label: "Date", name: "date", widget: "string", required: false, hint: "e.g. Apr 2027" }
+              - { label: "Event Date", name: "date", widget: "string", required: false, hint: "e.g. Apr 2027" }
               - label: "Attendance"
                 name: "attendance"
                 widget: "select"
@@ -263,6 +320,27 @@ collections:
                 widget: "select"
                 options: ["Planned", "Abstract Submitted", "Accepted", "Attended", "Declined"]
                 default: "Planned"
+              - label: "Operational Dates"
+                name: "dates"
+                widget: "list"
+                required: false
+                summary: "{{fields.label}}: {{fields.when}}"
+                fields:
+                  - { label: "Label", name: "label", widget: "string", hint: "e.g. Submission closes / Notification / Early-bird ends" }
+                  - { label: "When", name: "when", widget: "string" }
+              - label: "Execution Checklist"
+                name: "subtasks"
+                widget: "list"
+                required: false
+                summary: "{{fields.task}}"
+                fields:
+                  - { label: "Task", name: "task", widget: "string", hint: "e.g. Register / Finalize slides / Submit paper layout" }
+                  - { label: "Done", name: "done", widget: "boolean", default: false }
+              - label: "Reference Draft"
+                name: "ref"
+                widget: "file"
+                required: false
+                hint: "The slide deck or paper being presented."
           - label: "Grants"
             name: "grants"
             widget: "list"
@@ -277,6 +355,27 @@ collections:
                 widget: "select"
                 options: ["Scouting", "Drafting", "Submitted", "Awarded", "Declined"]
                 default: "Scouting"
+              - label: "Operational Dates"
+                name: "dates"
+                widget: "list"
+                required: false
+                summary: "{{fields.label}}: {{fields.when}}"
+                fields:
+                  - { label: "Label", name: "label", widget: "string", hint: "e.g. LOI due / Full proposal due / Award notification" }
+                  - { label: "When", name: "when", widget: "string" }
+              - label: "Execution Checklist"
+                name: "subtasks"
+                widget: "list"
+                required: false
+                summary: "{{fields.task}}"
+                fields:
+                  - { label: "Task", name: "task", widget: "string" }
+                  - { label: "Done", name: "done", widget: "boolean", default: false }
+              - label: "Reference Draft"
+                name: "ref"
+                widget: "file"
+                required: false
+                hint: "The proposal draft this application refers to."
           - label: "Programs & Misc Opportunities"
             name: "programs"
             widget: "list"
@@ -291,6 +390,26 @@ collections:
                 options: ["Watching", "Applied", "Accepted", "Completed", "Declined"]
                 default: "Watching"
               - { label: "Note", name: "note", widget: "string", required: false }
+              - label: "Operational Dates"
+                name: "dates"
+                widget: "list"
+                required: false
+                summary: "{{fields.label}}: {{fields.when}}"
+                fields:
+                  - { label: "Label", name: "label", widget: "string" }
+                  - { label: "When", name: "when", widget: "string" }
+              - label: "Execution Checklist"
+                name: "subtasks"
+                widget: "list"
+                required: false
+                summary: "{{fields.task}}"
+                fields:
+                  - { label: "Task", name: "task", widget: "string" }
+                  - { label: "Done", name: "done", widget: "boolean", default: false }
+              - label: "Reference File"
+                name: "ref"
+                widget: "file"
+                required: false
 
       # ---------------------------------------------------------------
       # Writing Progress Matrix

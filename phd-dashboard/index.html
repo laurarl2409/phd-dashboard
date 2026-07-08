@@ -8,18 +8,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js" defer></script>
 <style>
 /* ============================================================
-   SCHOLAR COMMAND — pastel edition, sidebar layout
-   Left navigation pane (pages + Tools), Supervisor Sentinel as
-   a clickable banner at the very top, and a deadlines-first
-   dashboard: Calendar → This Weekend (toggleable) → Daily
-   Agenda. Every module has a pencil Edit button that deep-links
-   straight into its Decap CMS entry for frictionless editing.
-   Motion: strong ease-out entries, ease-in-out movement, <300ms.
+   SCHOLAR COMMAND — live-data edition
+   Everything renders from Decap CMS JSON files in /content/data/
+   (no hardcoded content; clean empty states when files are
+   missing). One public calendar feed powers three widgets:
+   Month Calendar, This Week in a Nutshell, and Daily Agenda.
+   Interactive layers: roadmap highway with slide-down detail,
+   course drive drawers, literature workspace drawers with
+   drag-and-drop status + live search, journal aim profiles,
+   pipeline execution profiles, and a native voice logger.
    ============================================================ */
 :root{
-  /* Canvas + surfaces */
   --bg:            #EDEFF9;
   --card:          #FFFFFF;
   --card-soft:     #F6F7FD;
@@ -28,7 +30,6 @@
   --ink-soft:      #6A6F8E;
   --ink-faint:     #9BA0BC;
 
-  /* Pastel accents */
   --peri:          #7B87E8;
   --peri-deep:     #5A63C7;
   --peri-soft:     #E9ECFC;
@@ -48,7 +49,6 @@
   --note-line:     rgb(111 91 214 / .16);
   --note-ink:      #7A6BC9;
 
-  /* Motion */
   --ease-out:      cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out:   cubic-bezier(0.77, 0, 0.175, 1);
   --t-press:       160ms;
@@ -62,6 +62,7 @@
 
   --shadow-card:   0 1px 2px rgb(43 46 74 / .05), 0 12px 32px rgb(101 110 190 / .10);
   --shadow-lift:   0 3px 6px rgb(43 46 74 / .06), 0 16px 40px rgb(101 110 190 / .16);
+  --shadow-drawer: -18px 0 60px rgb(43 46 74 / .18);
 
   --font-display:  "Fraunces", Georgia, serif;
   --font-ui:       "Schibsted Grotesk", system-ui, -apple-system, sans-serif;
@@ -84,18 +85,15 @@ body{
   min-height:100vh;
 }
 
-/* ---------- App layout: left nav pane + main content ---------- */
+/* ---------- App layout ---------- */
 .layout{
   max-width:1480px; margin:0 auto;
   padding:24px clamp(14px, 2.5vw, 36px) 56px;
   display:grid; grid-template-columns:252px minmax(0, 1fr); gap:22px;
   align-items:start;
 }
-@media (max-width:1020px){
-  .layout{ grid-template-columns:1fr; }
-}
+@media (max-width:1020px){ .layout{ grid-template-columns:1fr; } }
 
-/* ---------- Entrance choreography ---------- */
 @keyframes rise-in{
   from{ opacity:0; transform:translateY(8px); }
   to{ opacity:1; transform:translateY(0); }
@@ -106,7 +104,7 @@ body{
   animation-delay:var(--d, 0ms);
 }
 
-/* ---------- Sidebar (navigation pane + Tools) ---------- */
+/* ---------- Sidebar ---------- */
 .sidebar{
   background:var(--card); border:1px solid var(--line);
   border-radius:var(--radius-lg); box-shadow:var(--shadow-card);
@@ -150,7 +148,6 @@ body{
 .nav-btn.on{ background:var(--ink); color:#fff; }
 .nav-btn.on svg{ opacity:1; }
 
-/* Tools inside the nav pane */
 .side-tools{ display:flex; flex-direction:column; gap:3px; }
 .side-tool{
   display:flex; align-items:center; gap:10px; text-decoration:none;
@@ -182,7 +179,6 @@ body{
 
 /* ---------- Main column ---------- */
 .main{ min-width:0; display:flex; flex-direction:column; gap:18px; }
-
 .main-head{
   display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
   padding:2px 4px;
@@ -199,7 +195,7 @@ body{
 }
 .today-chip .dot{ width:6px; height:6px; border-radius:50%; background:var(--violet); }
 
-/* ---------- Supervisor Sentinel banner ---------- */
+/* ---------- Sentinel banner ---------- */
 .banner{
   display:flex; align-items:center; gap:18px; flex-wrap:wrap;
   width:100%; text-align:left; cursor:pointer;
@@ -244,7 +240,7 @@ body{
 .view-head h2{ margin:0; font-family:var(--font-display); font-size:24px; font-weight:600; color:var(--ink); }
 .view-head p{ margin:4px 0 0; font-size:13.5px; color:var(--ink-soft); }
 
-/* ---------- Grid ---------- */
+/* ---------- Grid & cards ---------- */
 .grid{ display:grid; gap:18px; grid-template-columns:repeat(12, minmax(0, 1fr)); }
 .span-4{ grid-column:span 4; } .span-5{ grid-column:span 5; }
 .span-6{ grid-column:span 6; } .span-7{ grid-column:span 7; }
@@ -258,7 +254,6 @@ body{
 }
 .stack{ display:flex; flex-direction:column; gap:18px; }
 
-/* ---------- Cards ---------- */
 .card{
   background:var(--card);
   border:1px solid var(--line);
@@ -283,19 +278,29 @@ body{
 }
 .card-note-count{ font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); }
 
-/* ---------- Edit buttons (deep-link into Decap CMS) ---------- */
+/* ---------- Empty states ---------- */
+.empty{
+  border:1.5px dashed var(--line); border-radius:var(--radius-md);
+  padding:22px 18px; text-align:center;
+  background:var(--card-soft);
+  font-size:12.5px; color:var(--ink-faint); font-weight:500;
+}
+.empty a{ color:var(--peri-deep); font-weight:700; text-decoration:none; }
+.empty .empty-glyph{ display:block; font-size:17px; margin-bottom:5px; opacity:.6; }
+
+/* ---------- Edit buttons ---------- */
 .edit-btn{
   display:inline-flex; align-items:center; gap:6px; text-decoration:none;
   font-family:var(--font-ui); font-size:11px; font-weight:700; letter-spacing:.2px;
   color:var(--peri-deep);
   padding:5px 11px; border-radius:999px;
   background:var(--peri-soft); border:1px solid rgb(123 135 232 / .3);
-  white-space:nowrap;
+  white-space:nowrap; cursor:pointer;
   transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease, color var(--t-hover) ease;
 }
 .edit-btn:active{ transform:scale(0.95); }
 
-/* ---------- Badges ---------- */
+/* ---------- Badges, tags, buttons ---------- */
 .badge{
   display:inline-flex; align-items:center; gap:6px;
   padding:4px 11px; border-radius:999px;
@@ -315,13 +320,12 @@ body{
   color:var(--violet); letter-spacing:.2px; white-space:nowrap;
 }
 
-/* ---------- Buttons ---------- */
 .btn{
   appearance:none; border:0; cursor:pointer;
   display:inline-flex; align-items:center; gap:8px;
   font-family:var(--font-ui); font-size:12.5px; font-weight:700;
   padding:8px 14px; border-radius:999px;
-  background:var(--ink); color:#fff;
+  background:var(--ink); color:#fff; text-decoration:none;
   transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease;
 }
 .btn:active{ transform:scale(0.97); }
@@ -329,37 +333,57 @@ body{
 .btn .chev{ transition:transform var(--t-move) var(--ease-in-out); }
 .btn[aria-expanded="false"] .chev{ transform:rotate(-90deg); }
 
-/* Small icon toggle used by "This Weekend" */
-.toggle-btn{
+.collapse{ display:grid; grid-template-rows:0fr; transition:grid-template-rows var(--t-move) var(--ease-in-out); }
+.collapse > .collapse-inner{ overflow:hidden; min-height:0; }
+.collapse.open{ grid-template-rows:1fr; }
+
+/* ---------- Month calendar ---------- */
+.cal-nav{ display:flex; align-items:center; gap:10px; }
+.cal-nav .cal-month{
+  font-family:var(--font-display); font-size:14.5px; font-weight:600;
+  min-width:130px; text-align:center;
+}
+.cal-nav-btn{
   appearance:none; cursor:pointer;
   border:1px solid var(--line); background:var(--card-soft);
   width:28px; height:28px; border-radius:9px;
   display:grid; place-items:center; color:var(--ink-soft);
   transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease;
 }
-.toggle-btn:active{ transform:scale(0.92); }
-.toggle-btn .chev{ transition:transform var(--t-move) var(--ease-in-out); }
-.toggle-btn[aria-expanded="false"] .chev{ transform:rotate(-90deg); }
-
-/* ---------- Animated expand ---------- */
-.collapse{ display:grid; grid-template-rows:0fr; transition:grid-template-rows var(--t-move) var(--ease-in-out); }
-.collapse > .collapse-inner{ overflow:hidden; min-height:0; }
-.collapse.open{ grid-template-rows:1fr; }
-
-/* ---------- Agenda / weekend / week lists ---------- */
-.week-group{ margin-bottom:16px; } .week-group:last-child{ margin-bottom:0; }
-.week-label{
-  font-size:10.5px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase;
-  color:var(--ink-faint); margin-bottom:8px; display:flex; align-items:center; gap:8px;
+.cal-nav-btn:active{ transform:scale(0.92); }
+.cal-grid{
+  display:grid; grid-template-columns:repeat(7, 1fr); gap:5px;
 }
-.week-label::after{ content:""; flex:1; height:1px; background:var(--line); }
-.week-item{
-  display:flex; align-items:baseline; justify-content:space-between; gap:12px;
-  padding:7px 10px; margin:0 -10px; border-radius:var(--radius-sm);
-  font-size:13.5px; font-weight:500;
-  transition:background-color var(--t-hover) ease;
+.cal-dow{
+  font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+  color:var(--ink-faint); text-align:center; padding:4px 0 7px;
 }
-.week-item .wi-name{ min-width:0; }
+.cal-cell{
+  min-height:78px; border-radius:10px; padding:6px 7px;
+  background:var(--card-soft); border:1px solid transparent;
+  display:flex; flex-direction:column; gap:3px;
+  transition:border-color var(--t-hover) ease, background-color var(--t-hover) ease;
+}
+.cal-cell.out{ opacity:.38; }
+.cal-cell.today{ background:var(--lav-soft); border-color:rgb(111 91 214 / .35); }
+.cal-daynum{
+  font-family:var(--font-mono); font-size:11px; font-weight:600; color:var(--ink-soft);
+}
+.cal-cell.today .cal-daynum{ color:var(--violet); }
+.cal-ev{
+  font-size:10px; font-weight:700; line-height:1.25;
+  padding:2.5px 6px; border-radius:6px;
+  background:var(--peri-soft); color:var(--peri-deep);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.cal-more{ font-size:9.5px; font-weight:700; color:var(--ink-faint); padding-left:2px; }
+.cal-frame{
+  width:100%; aspect-ratio:16 / 9.4; border:0;
+  border-radius:var(--radius-md); background:var(--card-soft);
+}
+@media (max-width:640px){ .cal-cell{ min-height:52px; } .cal-ev{ display:none; } .cal-cell .cal-pip{ width:5px; height:5px; border-radius:50%; background:var(--peri); } }
+
+/* ---------- Agenda / week lists ---------- */
 .agenda-item{
   display:flex; align-items:center; gap:12px;
   padding:9px 10px; margin:0 -10px; border-radius:var(--radius-sm);
@@ -371,9 +395,85 @@ body{
   background:var(--lav-soft); border:1px solid #E0D6F7;
   padding:3px 9px; border-radius:999px; flex:none; min-width:76px; text-align:center;
 }
-.lit-empty{ font-size:12.5px; color:var(--ink-faint); padding:12px 4px; }
+.week-item{
+  display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+  padding:7px 10px; margin:0 -10px; border-radius:var(--radius-sm);
+  font-size:13.5px; font-weight:500;
+  transition:background-color var(--t-hover) ease;
+}
+.week-item .wi-name{ min-width:0; }
 
-/* ---------- Sentinel (Advisor page card) ---------- */
+/* ---------- Roadmap highway ---------- */
+.highway-wrap{ overflow-x:auto; padding:14px 4px 6px; }
+.highway{
+  display:flex; align-items:flex-start; gap:0;
+  min-width:min-content; position:relative; padding:8px 10px 4px;
+}
+.hw-stop{
+  position:relative; flex:1; min-width:150px;
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  padding:0 10px;
+}
+.hw-stop::before{
+  content:""; position:absolute; top:15px; left:-50%; width:100%; height:3px;
+  background:var(--line); z-index:0;
+}
+.hw-stop:first-child::before{ display:none; }
+.hw-stop.completed::before{ background:var(--peri); }
+.hw-stop.active::before{ background:linear-gradient(90deg, var(--peri), var(--violet)); }
+.hw-node{
+  appearance:none; cursor:pointer; z-index:1;
+  width:32px; height:32px; border-radius:50%;
+  background:var(--card); border:3px solid var(--ink-faint);
+  display:grid; place-items:center; color:transparent;
+  transition:transform var(--t-hover) var(--ease-out), border-color var(--t-hover) ease, background-color var(--t-hover) ease;
+}
+.hw-node:active{ transform:scale(0.9); }
+.hw-stop.completed .hw-node{ background:var(--peri); border-color:var(--peri); color:#fff; }
+.hw-stop.active .hw-node{ background:var(--violet); border-color:var(--violet); color:#fff; }
+@keyframes node-pulse{
+  0%{ box-shadow:0 0 0 0 rgb(111 91 214 / .4); }
+  100%{ box-shadow:0 0 0 12px rgb(111 91 214 / 0); }
+}
+.hw-stop.active .hw-node{ animation:node-pulse 2.2s var(--ease-out) infinite; }
+.hw-stop.open .hw-node{ transform:scale(1.15); }
+.hw-title{ font-weight:700; font-size:12.5px; margin-top:9px; line-height:1.3; }
+.hw-stop.future .hw-title{ color:var(--ink-soft); font-weight:600; }
+.hw-date{ font-family:var(--font-mono); font-size:10px; color:var(--ink-faint); margin-top:2px; }
+.hw-detail{ margin-top:4px; }
+.hw-pane{
+  border:1px solid var(--line); border-radius:var(--radius-md);
+  background:var(--card-soft); padding:16px 18px;
+}
+.hw-pane-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+.hw-pane-title{ font-family:var(--font-display); font-size:16px; font-weight:600; margin:0; }
+.hw-pane-note{ font-size:13px; color:var(--ink-soft); margin:4px 0 0; }
+.hw-subs{ list-style:none; margin:12px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; }
+
+/* ---------- Milestone checklist items (shared) ---------- */
+.milestone{ display:flex; align-items:center; gap:11px; font-size:13.5px; font-weight:500; }
+.tick{
+  width:19px; height:19px; border-radius:6px; flex:none;
+  border:1.5px solid rgb(43 46 74 / .35);
+  background:rgb(255 255 255 / .6);
+  display:grid; place-items:center; cursor:default;
+  transition:background-color var(--t-hover) ease, border-color var(--t-hover) ease;
+}
+.tick svg{ opacity:0; transform:scale(0.6); transition:opacity var(--t-press) var(--ease-out), transform var(--t-press) var(--ease-out); }
+.milestone.done .tick{ background:var(--violet); border-color:var(--violet); }
+.milestone.done .tick svg{ opacity:1; transform:scale(1); }
+.milestone .m-text{ position:relative; transition:opacity var(--t-move) ease; }
+.milestone .m-text::after{
+  content:""; position:absolute; left:0; top:52%; height:1.5px; width:100%;
+  background:currentColor;
+  transform:scaleX(0); transform-origin:left center;
+  transition:transform var(--t-move) var(--ease-in-out);
+}
+.milestone.done .m-text{ opacity:.5; }
+.milestone.done .m-text::after{ transform:scaleX(1); }
+.milestone.toggleable .tick{ cursor:pointer; }
+
+/* ---------- Sentinel hero (Advisor page) ---------- */
 .card-hero{
   background:
     radial-gradient(420px 240px at 100% 0%, rgb(255 255 255 / .55), transparent 60%),
@@ -397,26 +497,6 @@ body{
 }
 .sentinel-status{ margin-top:14px; }
 .milestones{ list-style:none; margin:18px 0 0; padding:0; display:flex; flex-direction:column; gap:9px; }
-.milestone{ display:flex; align-items:center; gap:11px; font-size:13.5px; font-weight:500; }
-.tick{
-  width:19px; height:19px; border-radius:6px; flex:none;
-  border:1.5px solid rgb(43 46 74 / .35);
-  background:rgb(255 255 255 / .45);
-  display:grid; place-items:center;
-  transition:background-color var(--t-hover) ease, border-color var(--t-hover) ease;
-}
-.tick svg{ opacity:0; transform:scale(0.6); transition:opacity var(--t-press) var(--ease-out), transform var(--t-press) var(--ease-out); }
-.milestone.done .tick{ background:var(--violet); border-color:var(--violet); }
-.milestone.done .tick svg{ opacity:1; transform:scale(1); }
-.milestone .m-text{ position:relative; transition:opacity var(--t-move) ease; }
-.milestone .m-text::after{
-  content:""; position:absolute; left:0; top:52%; height:1.5px; width:100%;
-  background:currentColor;
-  transform:scaleX(0); transform-origin:left center;
-  transition:transform var(--t-move) var(--ease-in-out);
-}
-.milestone.done .m-text{ opacity:.5; }
-.milestone.done .m-text::after{ transform:scaleX(1); }
 .sentinel-foot{ margin-top:20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 .sentinel-progress{ font-family:var(--font-mono); font-size:12px; color:rgb(43 46 74 / .6); }
 .log-body{
@@ -426,22 +506,33 @@ body{
 }
 .log-body strong{ color:var(--violet); font-weight:700; }
 .log-body p{ margin:0 0 8px; } .log-body p:last-child{ margin:0; }
-.log-edit-row{ margin-top:12px; display:flex; justify-content:flex-end; }
+.log-edit-row{ margin-top:12px; display:flex; justify-content:flex-end; gap:8px; }
 
-/* ---------- Calendar ---------- */
-.cal-frame{
-  width:100%; aspect-ratio:16 / 9.4; border:0;
-  border-radius:var(--radius-md); background:var(--card-soft);
+/* ---------- Voice logger ---------- */
+.voice-kit{ display:flex; align-items:center; gap:8px; }
+.rec-btn{
+  appearance:none; cursor:pointer;
+  width:34px; height:34px; border-radius:50%;
+  border:1px solid rgb(43 46 74 / .18);
+  background:rgb(255 255 255 / .7); color:var(--rose);
+  display:grid; place-items:center;
+  transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease, box-shadow var(--t-hover) ease;
 }
-.cal-placeholder{
-  border:1.5px dashed var(--line); border-radius:var(--radius-md);
-  padding:40px 24px; text-align:center; color:var(--ink-soft);
-  background:var(--card-soft); font-size:13.5px;
+.rec-btn:active{ transform:scale(0.92); }
+@keyframes rec-pulse{
+  0%{ box-shadow:0 0 0 0 rgb(194 85 115 / .45); }
+  100%{ box-shadow:0 0 0 12px rgb(194 85 115 / 0); }
 }
-.cal-placeholder code{
-  font-family:var(--font-mono); font-size:12px; background:var(--peri-soft);
-  padding:2px 7px; border-radius:6px; color:var(--peri-deep);
+.rec-btn.recording{ background:var(--rose); color:#fff; animation:rec-pulse 1.4s var(--ease-out) infinite; }
+.rec-time{ font-family:var(--font-mono); font-size:11.5px; font-weight:600; color:var(--rose); min-width:44px; }
+.voice-strip{
+  margin-top:12px; padding:12px 14px; border-radius:var(--radius-md);
+  background:var(--card-soft); border:1px solid var(--line);
+  display:flex; flex-direction:column; gap:9px;
 }
+.voice-strip audio{ width:100%; height:36px; }
+.voice-strip-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.voice-hint{ font-size:11px; color:var(--ink-faint); font-weight:500; }
 
 /* ---------- Scratchpad ---------- */
 .card-scratch{
@@ -499,37 +590,7 @@ body{
 .scratch-del:active{ transform:scale(0.9); }
 .scratch-hint{ margin-top:12px; font-size:11px; color:var(--note-ink); font-weight:600; }
 
-/* ---------- Roadmap ---------- */
-.roadmap{ list-style:none; margin:4px 0 0; padding:0 0 0 4px; position:relative; }
-.roadmap::before{
-  content:""; position:absolute; left:12px; top:10px; bottom:10px; width:2px;
-  background:var(--line); border-radius:2px;
-}
-.rm-item{ position:relative; padding:0 0 22px 36px; }
-.rm-item:last-child{ padding-bottom:2px; }
-.rm-node{
-  position:absolute; left:4px; top:2px; width:18px; height:18px; border-radius:50%;
-  background:var(--card); border:2.5px solid var(--ink-faint);
-  transition:border-color var(--t-hover) ease, background-color var(--t-hover) ease;
-}
-.rm-item.completed .rm-node{ background:var(--peri); border-color:var(--peri); }
-.rm-item.completed .rm-node::after{
-  content:""; position:absolute; inset:0; margin:auto; width:7px; height:4px;
-  border-left:2px solid #fff; border-bottom:2px solid #fff;
-  transform:rotate(-45deg) translate(0.5px, -1px);
-}
-.rm-item.active .rm-node{ background:var(--violet); border-color:var(--violet); }
-@keyframes node-pulse{
-  0%{ box-shadow:0 0 0 0 rgb(111 91 214 / .4); }
-  100%{ box-shadow:0 0 0 10px rgb(111 91 214 / 0); }
-}
-.rm-item.active .rm-node{ animation:node-pulse 2.2s var(--ease-out) infinite; }
-.rm-title{ font-weight:700; font-size:14px; }
-.rm-item.future .rm-title{ color:var(--ink-soft); font-weight:600; }
-.rm-note{ font-size:12.5px; color:var(--ink-faint); margin-top:1px; }
-.rm-state{ margin-top:6px; }
-
-/* ---------- Class repository ---------- */
+/* ---------- Course drive ---------- */
 .course-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px; }
 .course{
   border:1px solid var(--line); border-radius:var(--radius-md);
@@ -544,9 +605,22 @@ body{
 .course-term{ font-size:12px; color:var(--ink-faint); }
 .course-meta{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
 .course-count{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); }
-.course .chev{ color:var(--ink-faint); transition:transform var(--t-move) var(--ease-in-out); }
-.course[aria-expanded="true"] .chev{ transform:rotate(180deg); }
-.materials{ list-style:none; margin:10px 0 0; padding:10px 0 0; border-top:1px dashed var(--line); display:flex; flex-direction:column; gap:6px; }
+.course .go-arrow{ color:var(--ink-faint); transition:transform var(--t-hover) var(--ease-out); }
+
+/* ---------- Folders (inside course drawer) ---------- */
+.folder{ border:1px solid var(--line); border-radius:var(--radius-md); background:var(--card); margin-bottom:10px; overflow:hidden; }
+.folder-head{
+  appearance:none; border:0; cursor:pointer; width:100%;
+  display:flex; align-items:center; gap:10px; text-align:left;
+  background:var(--card-soft); padding:12px 14px;
+  font-family:var(--font-ui); font-size:13px; font-weight:700; color:var(--ink);
+  transition:background-color var(--t-hover) ease;
+}
+.folder-head .f-count{ margin-left:auto; font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); font-weight:600; }
+.folder-head .chev{ transition:transform var(--t-move) var(--ease-in-out); color:var(--ink-faint); }
+.folder.open .folder-head .chev{ transform:rotate(180deg); }
+.folder-body{ padding:4px 14px; }
+.materials{ list-style:none; margin:0; padding:8px 0 12px; display:flex; flex-direction:column; gap:7px; }
 .material{ display:flex; align-items:center; gap:9px; font-size:12.5px; }
 .material a{ color:var(--ink); text-decoration:none; font-weight:600; border-bottom:1px solid transparent; transition:border-color var(--t-hover) ease, color var(--t-hover) ease; }
 .mat-kind{
@@ -558,7 +632,7 @@ body{
 .journal-list{ display:flex; flex-direction:column; }
 .journal{
   display:grid; grid-template-columns:minmax(160px, .8fr) 1.6fr auto;
-  gap:14px; align-items:center;
+  gap:14px; align-items:center; cursor:pointer;
   padding:13px 12px; margin:0 -12px; border-radius:var(--radius-sm);
   border-bottom:1px solid var(--line);
   transition:background-color var(--t-hover) ease;
@@ -566,12 +640,19 @@ body{
 .journal:last-child{ border-bottom:0; }
 .journal-name{ font-weight:700; font-size:13.5px; }
 .journal-focus{ font-size:12.5px; color:var(--ink-soft); }
-.journal-link{
-  font-size:12px; font-weight:700; color:var(--peri-deep); text-decoration:none;
+.journal-open{
+  font-size:12px; font-weight:700; color:var(--peri-deep);
   display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
 }
-.journal-link .arrow{ transition:transform var(--t-hover) var(--ease-out); }
+.journal-open .arrow{ transition:transform var(--t-hover) var(--ease-out); }
 @media (max-width:640px){ .journal{ grid-template-columns:1fr; gap:4px; } }
+.spec-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+.spec{
+  border:1px solid var(--line); border-radius:var(--radius-md);
+  background:var(--card-soft); padding:11px 13px;
+}
+.spec .spec-label{ font-size:9.5px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:var(--ink-faint); }
+.spec .spec-value{ font-size:13px; font-weight:700; margin-top:3px; }
 
 /* ---------- Writing matrix ---------- */
 .writing-project{ font-family:var(--font-display); font-size:17px; font-weight:600; margin:0 0 2px; }
@@ -590,19 +671,20 @@ body{
 @media (max-width:560px){ .write-row{ grid-template-columns:1fr auto; } .write-track{ grid-column:1 / -1; } }
 
 /* ---------- Literature ---------- */
-.tag-rail{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px; }
-.tag{
-  appearance:none; cursor:pointer;
-  border:1px solid var(--line); background:var(--card);
-  border-radius:999px; padding:5px 12px;
-  font-family:var(--font-ui); font-size:11.5px; font-weight:700; color:var(--ink-soft);
-  transition:transform var(--t-press) var(--ease-out),
-             background-color var(--t-hover) ease,
-             color var(--t-hover) ease,
-             border-color var(--t-hover) ease;
+.search-wrap{ position:relative; margin-bottom:16px; }
+.search-wrap svg{
+  position:absolute; left:14px; top:50%; transform:translateY(-50%);
+  color:var(--ink-faint); pointer-events:none;
 }
-.tag:active{ transform:scale(0.95); }
-.tag.on{ background:var(--ink); border-color:var(--ink); color:#fff; }
+.search-bar{
+  width:100%; border:1px solid var(--line); outline:none;
+  background:var(--card-soft); border-radius:999px;
+  font-family:var(--font-ui); font-size:13px; font-weight:500; color:var(--ink);
+  padding:10px 16px 10px 38px;
+  transition:border-color var(--t-hover) ease, box-shadow var(--t-hover) ease, background-color var(--t-hover) ease;
+}
+.search-bar::placeholder{ color:var(--ink-faint); }
+.search-bar:focus{ border-color:var(--peri); background:#fff; box-shadow:0 0 0 4px rgb(123 135 232 / .14); }
 .lit-split{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
 @media (max-width:900px){ .lit-split{ grid-template-columns:1fr; } }
 .lit-col-head{
@@ -610,33 +692,34 @@ body{
   font-size:11px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-faint);
 }
 .lit-col-head::after{ content:""; flex:1; height:1px; background:var(--line); }
-.lit-list{ display:flex; flex-direction:column; gap:10px; }
+.lit-list{
+  display:flex; flex-direction:column; gap:10px; min-height:120px;
+  border-radius:var(--radius-md); padding:4px;
+  transition:background-color var(--t-hover) ease, box-shadow var(--t-hover) ease;
+}
+.lit-list.drag-over{ background:var(--lav-soft); box-shadow:inset 0 0 0 2px var(--lav); }
 .lit-entry{
   border:1px solid var(--line); border-radius:var(--radius-md);
-  background:var(--card); padding:13px 14px;
+  background:var(--card); padding:13px 14px; cursor:pointer;
   box-shadow:var(--shadow-card);
   transition:opacity 200ms var(--ease-out), transform 200ms var(--ease-out),
              box-shadow var(--t-hover) ease;
 }
-.lit-entry.is-hidden{ opacity:0; transform:scale(0.97); pointer-events:none; }
+.lit-entry[draggable="true"]{ cursor:grab; }
+.lit-entry.dragging{ opacity:.45; transform:scale(0.98); cursor:grabbing; }
+.lit-entry.is-hidden{ display:none; }
 .lit-top{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
 .lit-title{ font-weight:700; font-size:13.5px; line-height:1.35; }
 .lit-year{ font-family:var(--font-mono); font-size:11px; color:var(--violet); font-weight:600; flex:none; }
+.lit-author{ font-size:11.5px; color:var(--ink-soft); font-weight:600; margin-top:2px; }
 .lit-tags{ display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
 .lit-tag{
-  appearance:none; border:0; cursor:pointer;
   font-family:var(--font-ui); font-size:10px; font-weight:700; letter-spacing:.3px;
   padding:3px 9px; border-radius:999px;
   background:var(--lav-soft); color:var(--violet);
-  transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease, color var(--t-hover) ease;
 }
-.lit-tag:active{ transform:scale(0.94); }
 .lit-summary{ font-size:12.5px; color:var(--ink-soft); margin-top:8px; line-height:1.5; }
-.lit-files{ display:flex; gap:12px; margin-top:9px; }
-.lit-files a{
-  font-size:11.5px; font-weight:700; color:var(--sky-deep); text-decoration:none;
-  display:inline-flex; align-items:center; gap:5px;
-}
+.drag-hint{ margin-top:12px; font-size:11px; color:var(--ink-faint); font-weight:500; }
 
 /* ---------- Pipelines ---------- */
 .pipes{ display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; }
@@ -654,7 +737,7 @@ body{
 }
 .pipe-count{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); letter-spacing:0; }
 .pipe-item{
-  border-radius:var(--radius-sm); padding:10px 11px;
+  border-radius:var(--radius-sm); padding:10px 11px; cursor:pointer;
   background:var(--card); border:1px solid var(--line);
   transition:transform var(--t-hover) var(--ease-out), box-shadow var(--t-hover) ease;
 }
@@ -662,7 +745,86 @@ body{
 .pipe-item-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
 .pipe-item-foot{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; flex-wrap:wrap; }
 
-/* ---------- Hover states (pointer devices only) ---------- */
+/* ---------- Drawer (shared detail workspace) ---------- */
+.drawer-backdrop{
+  position:fixed; inset:0; z-index:60;
+  background:rgb(43 46 74 / .32);
+  opacity:0; pointer-events:none;
+  transition:opacity var(--t-move) ease;
+}
+.drawer-backdrop.show{ opacity:1; pointer-events:auto; }
+.drawer{
+  position:fixed; top:0; right:0; bottom:0; z-index:61;
+  width:min(560px, 94vw);
+  background:var(--card); border-left:1px solid var(--line);
+  box-shadow:var(--shadow-drawer);
+  transform:translateX(102%);
+  transition:transform 300ms var(--ease-in-out);
+  display:flex; flex-direction:column;
+}
+.drawer.show{ transform:translateX(0); }
+.drawer-head{
+  padding:20px 22px 16px; border-bottom:1px solid var(--line);
+  display:flex; align-items:flex-start; justify-content:space-between; gap:14px;
+}
+.drawer-eyebrow{
+  font-size:10px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase;
+  color:var(--ink-faint); display:block; margin-bottom:3px;
+}
+.drawer-title{ margin:0; font-family:var(--font-display); font-size:19px; font-weight:600; line-height:1.25; }
+.drawer-sub{ margin:4px 0 0; font-size:12.5px; color:var(--ink-soft); }
+.drawer-close{
+  appearance:none; cursor:pointer; flex:none;
+  width:32px; height:32px; border-radius:50%;
+  border:1px solid var(--line); background:var(--card-soft); color:var(--ink-soft);
+  display:grid; place-items:center;
+  transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease;
+}
+.drawer-close:active{ transform:scale(0.9); }
+.drawer-body{ padding:18px 22px 28px; overflow-y:auto; flex:1; }
+.drawer-section{ margin-bottom:20px; }
+.drawer-label{
+  font-size:10.5px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase;
+  color:var(--ink-faint); margin-bottom:9px; display:flex; align-items:center; gap:8px;
+}
+.drawer-label::after{ content:""; flex:1; height:1px; background:var(--line); }
+.drawer-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.prose{ font-size:13.5px; line-height:1.65; color:var(--ink); }
+.prose p{ margin:0 0 10px; } .prose p:last-child{ margin-bottom:0; }
+.prose strong{ color:var(--violet); }
+.prose h1,.prose h2,.prose h3{ font-family:var(--font-display); font-size:15px; margin:14px 0 6px; }
+.prose ul{ margin:6px 0 10px; padding-left:20px; }
+.prose li{ margin-bottom:4px; }
+.media-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.media-grid img{
+  width:100%; border-radius:10px; border:1px solid var(--line);
+  display:block; background:var(--card-soft); cursor:zoom-in;
+  transition:transform var(--t-hover) var(--ease-out), box-shadow var(--t-hover) ease;
+}
+.kv-rows{ display:flex; flex-direction:column; gap:8px; }
+.kv{
+  display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+  padding:8px 11px; border-radius:var(--radius-sm);
+  background:var(--card-soft); border:1px solid var(--line);
+  font-size:12.5px; font-weight:600;
+}
+.kv .k{ color:var(--ink-soft); }
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed; left:50%; bottom:26px; z-index:80;
+  transform:translate(-50%, 16px);
+  background:var(--ink); color:#fff;
+  font-size:12.5px; font-weight:600;
+  padding:11px 18px; border-radius:999px;
+  box-shadow:var(--shadow-lift);
+  opacity:0; pointer-events:none;
+  transition:opacity var(--t-move) ease, transform var(--t-move) var(--ease-out);
+  max-width:88vw; text-align:center;
+}
+.toast.show{ opacity:1; transform:translate(-50%, 0); }
+
+/* ---------- Hover states ---------- */
 @media (hover:hover) and (pointer:fine){
   .nav-btn:hover{ background:var(--peri-soft); color:var(--ink); }
   .nav-btn.on:hover{ background:var(--ink); color:#fff; }
@@ -672,21 +834,23 @@ body{
   .banner:hover .go{ transform:translateX(3px); background:#fff; }
   .btn:hover{ background:#3B3F63; }
   .btn-ghost:hover{ background:rgb(255 255 255 / .85); }
-  .toggle-btn:hover{ background:var(--peri-soft); color:var(--ink); }
+  .cal-nav-btn:hover, .drawer-close:hover{ background:var(--peri-soft); color:var(--ink); }
   .edit-btn:hover{ background:var(--peri); color:#fff; }
-  .week-item:hover, .agenda-item:hover{ background:var(--card-soft); }
+  .agenda-item:hover, .week-item:hover{ background:var(--card-soft); }
   .journal:hover{ background:var(--card-soft); }
-  .journal-link:hover .arrow{ transform:translate(2px, -2px); }
+  .journal:hover .journal-open .arrow{ transform:translate(2px, -2px); }
   .course:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lift); border-color:rgb(123 135 232 / .45); }
+  .course:hover .go-arrow{ transform:translate(2px, -2px); }
   .material a:hover{ color:var(--peri-deep); border-bottom-color:var(--peri-deep); }
-  .tag:hover{ border-color:var(--peri); color:var(--peri-deep); }
-  .tag.on:hover{ color:#fff; }
+  .folder-head:hover{ background:var(--peri-soft); }
+  .hw-node:hover{ transform:scale(1.15); }
   .lit-entry:hover{ box-shadow:var(--shadow-lift); }
-  .lit-tag:hover{ background:var(--violet); color:#fff; }
-  .lit-files a:hover{ text-decoration:underline; }
   .pipe-item:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lift); }
+  .rec-btn:hover{ background:#fff; }
+  .media-grid img:hover{ transform:scale(1.02); box-shadow:var(--shadow-lift); }
   .scratch-item:hover .scratch-del{ opacity:1; }
   .scratch-check:hover{ border-color:var(--peri-deep); }
+  .milestone.toggleable .tick:hover{ border-color:var(--violet); }
 }
 @media (hover:none){ .scratch-del{ opacity:.6; } }
 
@@ -696,7 +860,8 @@ body{
   .view.active{ animation:fade-only 200ms ease; }
   @keyframes fade-only{ from{ opacity:0; } to{ opacity:1; } }
   *{ transition-duration:1ms !important; animation-duration:1ms !important; }
-  .rm-item.active .rm-node{ animation:none; box-shadow:0 0 0 4px rgb(111 91 214 / .25); }
+  .hw-stop.active .hw-node{ animation:none; box-shadow:0 0 0 5px rgb(111 91 214 / .25); }
+  .rec-btn.recording{ animation:none; box-shadow:0 0 0 5px rgb(194 85 115 / .3); }
 }
 </style>
 </head>
@@ -704,7 +869,7 @@ body{
 <div class="layout">
 
   <!-- ================================================================
-       LEFT NAVIGATION PANE: pages + Tools
+       LEFT NAVIGATION PANE
        ================================================================ -->
   <aside class="sidebar" style="--d:0ms">
     <div class="brand">
@@ -760,12 +925,12 @@ body{
     <div class="main-head">
       <div>
         <h2 id="main-title">Dashboard</h2>
-        <p>Deadlines first: calendar, the weekend ahead, and today's agenda.</p>
+        <p>Deadlines first: one calendar feed powers the month, the week, and today.</p>
       </div>
       <span class="today-chip"><span class="dot"></span><span id="today-date">—</span></span>
     </div>
 
-    <!-- Supervisor Sentinel banner: click to open the Advisor page -->
+    <!-- Supervisor Sentinel banner → Advisor page -->
     <button class="banner" id="sentinel-banner" style="--d:40ms" aria-label="Open the Advisor section">
       <div class="banner-main">
         <span class="banner-eyebrow">Supervisor Sentinel · Advisory Notes</span>
@@ -782,78 +947,62 @@ body{
     </button>
 
     <!-- ============================================================
-         PAGE: DASHBOARD — Calendar → This Weekend → Daily Agenda
+         PAGE: DASHBOARD
          ============================================================ -->
     <section class="view active" id="view-home">
       <div class="grid">
 
-        <!-- 1. Calendar -->
+        <!-- Month Calendar (center block) -->
         <section class="card span-8" style="--d:80ms" aria-labelledby="cal-title">
           <div class="card-head">
             <div>
               <span class="card-eyebrow">Time &amp; Institutional Radar</span>
               <h3 class="card-title" id="cal-title">Month Calendar</h3>
             </div>
-            <a class="edit-btn" data-edit="settings" href="#" target="_blank" rel="noopener">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              Edit</a>
+            <div class="card-head-actions">
+              <div class="cal-nav" id="cal-nav" hidden>
+                <button class="cal-nav-btn" id="cal-prev" aria-label="Previous month">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <span class="cal-month" id="cal-month">—</span>
+                <button class="cal-nav-btn" id="cal-next" aria-label="Next month">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                </button>
+              </div>
+              <a class="edit-btn" data-edit="settings" href="#" target="_blank" rel="noopener">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Edit</a>
+            </div>
           </div>
           <div id="cal-slot"></div>
         </section>
 
-        <!-- 2. This Weekend (toggleable) → 3. Daily Agenda -->
-        <div class="span-4 stack">
-          <section class="card" style="--d:120ms" aria-labelledby="weekend-title">
-            <div class="card-head" style="margin-bottom:0;">
-              <div>
-                <span class="card-eyebrow">Coming Up</span>
-                <h3 class="card-title" id="weekend-title">This Weekend</h3>
-              </div>
-              <div class="card-head-actions">
-                <a class="edit-btn" data-edit="week" href="#" target="_blank" rel="noopener">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                  Edit</a>
-                <button class="toggle-btn" id="weekend-toggle" aria-expanded="true" aria-controls="weekend-panel" title="Show or hide the weekend summary">
-                  <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-              </div>
-            </div>
-            <div class="collapse open" id="weekend-panel">
-              <div class="collapse-inner">
-                <div id="weekend-body" style="padding-top:14px;"></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="card" style="--d:160ms" aria-labelledby="agenda-title">
-            <div class="card-head">
-              <div>
-                <span class="card-eyebrow">What do I have for today?</span>
-                <h3 class="card-title" id="agenda-title">Daily Agenda</h3>
-              </div>
-              <a class="edit-btn" data-edit="week" href="#" target="_blank" rel="noopener">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                Edit</a>
-            </div>
-            <div id="agenda-body"></div>
-          </section>
-        </div>
-
-        <!-- Supporting widgets -->
-        <section class="card span-4" style="--d:200ms" aria-labelledby="week-title">
+        <!-- Daily Agenda (top right) -->
+        <section class="card span-4" style="--d:120ms" aria-labelledby="agenda-title">
           <div class="card-head">
             <div>
-              <span class="card-eyebrow">Time &amp; Institutional Radar</span>
+              <span class="card-eyebrow">What do I have for today?</span>
+              <h3 class="card-title" id="agenda-title">Daily Agenda</h3>
+            </div>
+            <span class="card-note-count" id="agenda-count"></span>
+          </div>
+          <div id="agenda-body"></div>
+        </section>
+
+        <!-- This Week in a Nutshell (bottom left) -->
+        <section class="card span-7" style="--d:160ms" aria-labelledby="week-title">
+          <div class="card-head">
+            <div>
+              <span class="card-eyebrow">Parsed from your calendar feed</span>
               <h3 class="card-title" id="week-title">This Week in a Nutshell</h3>
             </div>
-            <a class="edit-btn" data-edit="week" href="#" target="_blank" rel="noopener">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              Edit</a>
+            <span class="card-note-count">next 7 days</span>
           </div>
           <div id="week-body"></div>
         </section>
 
-        <section class="card card-scratch span-4" style="--d:240ms" aria-labelledby="scratch-title">
+        <!-- Scratchpad -->
+        <section class="card card-scratch span-5" style="--d:200ms" aria-labelledby="scratch-title">
           <div class="card-head">
             <div>
               <span class="card-eyebrow" style="color:var(--note-ink)">Immediate Brain Dump</span>
@@ -867,7 +1016,8 @@ body{
           <p class="scratch-hint">Enter adds an item · checking it strikes it through · saved on this device</p>
         </section>
 
-        <section class="card span-4" style="--d:280ms" aria-labelledby="roadmap-title">
+        <!-- Milestone Roadmap: academic progress highway -->
+        <section class="card span-12" style="--d:240ms" aria-labelledby="roadmap-title">
           <div class="card-head">
             <div>
               <span class="card-eyebrow">Institutional Hurdles</span>
@@ -877,14 +1027,17 @@ body{
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               Edit</a>
           </div>
-          <ol class="roadmap" id="roadmap"></ol>
+          <div class="highway-wrap"><div class="highway" id="highway"></div></div>
+          <div class="collapse" id="hw-detail-collapse"><div class="collapse-inner">
+            <div class="hw-detail"><div class="hw-pane" id="hw-pane"></div></div>
+          </div></div>
         </section>
 
       </div>
     </section>
 
     <!-- ============================================================
-         PAGE: ADVISOR (dedicated Supervisor Sentinel section)
+         PAGE: ADVISOR
          ============================================================ -->
     <section class="view" id="view-advisor">
       <div class="view-head">
@@ -924,11 +1077,17 @@ body{
               <span class="card-eyebrow">Previous Advising Session</span>
               <h3 class="card-title" id="log-title">Last Discussion Log</h3>
             </div>
-            <button class="btn btn-ghost" id="log-toggle" aria-expanded="true" aria-controls="log-panel">
-              Show / hide
-              <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
+            <div class="voice-kit">
+              <span class="rec-time" id="rec-time" hidden>0:00</span>
+              <button class="rec-btn" id="rec-btn" title="Record a voice memo of the meeting recap" aria-label="Record a voice memo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              </button>
+              <button class="btn btn-ghost" id="log-toggle" aria-expanded="true" aria-controls="log-panel">
+                <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+            </div>
           </div>
+          <div id="voice-slot"></div>
           <div class="collapse open" id="log-panel">
             <div class="collapse-inner">
               <div class="log-body" id="log-body"></div>
@@ -944,13 +1103,13 @@ body{
     </section>
 
     <!-- ============================================================
-         PAGE: CLASS REPOSITORY
+         PAGE: CLASSES (COURSE DRIVE)
          ============================================================ -->
     <section class="view" id="view-classes">
       <div class="view-head">
         <div>
           <h2>Class Repository</h2>
-          <p>Your PhD courses. Click a course to reveal its notes, PDFs, slides, and projects.</p>
+          <p>Your course drive. Click a course tile to open its workspace: lectures, assignments, and core readings.</p>
         </div>
         <a class="edit-btn" data-edit="courses" href="#" target="_blank" rel="noopener">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -967,13 +1126,13 @@ body{
     </section>
 
     <!-- ============================================================
-         PAGE: LITERATURE QUEUE & READING LOG
+         PAGE: LITERATURE (READING VAULT)
          ============================================================ -->
     <section class="view" id="view-literature">
       <div class="view-head">
         <div>
           <h2>Literature Queue &amp; Reading Log</h2>
-          <p>To-Read inbox on the left, Read archive on the right. Click any keyword badge to filter.</p>
+          <p>Click a card to open its workspace. Drag a card from the Queue to the Archive to mark it read.</p>
         </div>
         <a class="edit-btn" data-edit="literature" href="#" target="_blank" rel="noopener">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -985,28 +1144,33 @@ body{
           <h3 class="card-title">Reading Workspace</h3></div>
           <span class="card-note-count" id="lit-filter-note"></span>
         </div>
-        <div class="tag-rail" id="tag-rail" role="group" aria-label="Filter by keyword"></div>
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input class="search-bar" id="lit-search" type="search" autocomplete="off"
+                 placeholder="Filter by title, author, year, or tag…" aria-label="Filter literature">
+        </div>
         <div class="lit-split">
           <div>
             <div class="lit-col-head">To-Read Queue · Inbox</div>
-            <div class="lit-list" id="lit-queue"></div>
+            <div class="lit-list" id="lit-queue" data-status="To-Read"></div>
           </div>
           <div>
             <div class="lit-col-head">Read Archive · Vault</div>
-            <div class="lit-list" id="lit-archive"></div>
+            <div class="lit-list" id="lit-archive" data-status="Read"></div>
           </div>
         </div>
+        <p class="drag-hint">Drag a card between columns to flip its To-Read / Read status. When you're logged in via /admin/, the change commits straight back to the CMS.</p>
       </div>
     </section>
 
     <!-- ============================================================
-         PAGE: TARGET JOURNAL DIRECTORY
+         PAGE: JOURNALS (DEEP AIM PROFILES)
          ============================================================ -->
     <section class="view" id="view-journals">
       <div class="view-head">
         <div>
           <h2>Target Journal Directory</h2>
-          <p>Journals recommended to you: their focus, aims, and submission guidelines.</p>
+          <p>Click any journal to open its aim profile: focus, technical aims, word limits, review cadence, and guidelines packet.</p>
         </div>
         <a class="edit-btn" data-edit="journals" href="#" target="_blank" rel="noopener">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -1022,13 +1186,13 @@ body{
     </section>
 
     <!-- ============================================================
-         PAGE: ADVANCEMENT PIPELINES
+         PAGE: PIPELINES (ACTIVITY RECORD)
          ============================================================ -->
     <section class="view" id="view-pipelines">
       <div class="view-head">
         <div>
           <h2>Advancement Pipelines</h2>
-          <p>Tracking matrices for submissions, conferences, grants, and opportunities, plus your writing progress.</p>
+          <p>Click any entry to open its execution profile: operational dates, sub-task checklist, and reference files.</p>
         </div>
         <a class="edit-btn" data-edit="pipelines" href="#" target="_blank" rel="noopener">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -1081,169 +1245,106 @@ body{
 
   </div>
 </div>
+
+<!-- Shared detail drawer -->
+<div class="drawer-backdrop" id="drawer-backdrop"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+  <div class="drawer-head">
+    <div>
+      <span class="drawer-eyebrow" id="drawer-eyebrow"></span>
+      <h3 class="drawer-title" id="drawer-title"></h3>
+      <p class="drawer-sub" id="drawer-sub"></p>
+    </div>
+    <button class="drawer-close" id="drawer-close" aria-label="Close panel">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script>
 /* ============================================================
-   SCHOLAR COMMAND — application logic (sidebar + banner build)
-   Content is authored in Decap CMS (/admin/), which commits
-   JSON data files into /content/data/. This script fetches
-   those files; if a file does not exist yet (fresh install),
-   a seeded example dataset renders so the layout never breaks.
-
-   Pages are hash-routed: #home #advisor #classes #literature
-   #journals #pipelines — every page is directly linkable.
-   Every "Edit" pencil deep-links into the exact CMS entry:
-   /admin/#/collections/dashboard/entries/<name>
+   SCHOLAR COMMAND — live-data application engine
+   ------------------------------------------------------------
+   1. Fetches every module's JSON from /content/data/ (committed
+      by Decap CMS). No hardcoded content: missing files render
+      minimalist empty states that deep-link into the CMS.
+   2. One public calendar feed (Google/Notion ICS) powers three
+      widgets: Month Calendar, This Week in a Nutshell (next 7
+      days), Daily Agenda (today only).
+   3. Interactive layers: roadmap highway with slide-down detail
+      panes, course drive drawers with foldered assets, literature
+      workspace drawers + drag-and-drop status + live search,
+      journal aim profiles, pipeline execution profiles with
+      sub-task checklists, and a native MediaRecorder voice logger.
+   4. Write-back: when the user is logged in through Netlify
+      Identity, status flips and checklist ticks commit directly
+      to the repo via git-gateway; otherwise they persist on the
+      device and can be confirmed in the CMS.
    ============================================================ */
 (function(){
 "use strict";
 
+/* ---------------- utilities ---------------- */
 var esc = function(s){
   return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
   });
 };
 
-function loadJSON(path, fallback){
-  return fetch(path, {cache:"no-store"})
-    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-    .catch(function(){ return fallback; });
+function mdToHTML(src){
+  var lines = esc(src || "").split(/\r?\n/);
+  var out = [], inList = false, para = [];
+  function flushPara(){
+    if (para.length){ out.push("<p>" + para.join("<br>") + "</p>"); para = []; }
+  }
+  lines.forEach(function(ln){
+    if (/^\s*[-*] /.test(ln)){
+      flushPara();
+      if (!inList){ out.push("<ul>"); inList = true; }
+      out.push("<li>" + ln.replace(/^\s*[-*] /, "") + "</li>");
+    } else if (/^#{1,3} /.test(ln)){
+      flushPara();
+      if (inList){ out.push("</ul>"); inList = false; }
+      out.push("<h3>" + ln.replace(/^#{1,3} /, "") + "</h3>");
+    } else if (!ln.trim()){
+      flushPara();
+      if (inList){ out.push("</ul>"); inList = false; }
+    } else {
+      para.push(ln);
+    }
+  });
+  flushPara();
+  if (inList) out.push("</ul>");
+  return out.join("")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
 }
 
-/* ---------- Edit deep links into Decap CMS ---------- */
+var toastTimer = null;
+function toast(msg){
+  var el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 3400);
+}
+
+var PENCIL = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
 var ADMIN_ENTRY = "/admin/#/collections/dashboard/entries/";
 document.querySelectorAll("[data-edit]").forEach(function(a){
   a.setAttribute("href", ADMIN_ENTRY + a.getAttribute("data-edit"));
 });
+function editLink(key, label){
+  return '<a class="edit-btn" target="_blank" rel="noopener" href="' + ADMIN_ENTRY + key + '">' + PENCIL + " " + esc(label || "Edit in CMS") + "</a>";
+}
+function emptyState(editKey, message){
+  return '<div class="empty"><span class="empty-glyph">◌</span>' + esc(message) +
+    '<br><a target="_blank" rel="noopener" href="' + ADMIN_ENTRY + editKey + '">Add it in the CMS &rarr;</a></div>';
+}
 
-/* ---------- Seed data (used until the CMS commits real files) ---------- */
-var SEEDS = {
-  settings: {
-    owner_name: "Doctoral Candidate",
-    calendar_embed: "",
-    tagline: "PhD Academic Dashboard"
-  },
-  tools: { tools: [
-    { label: "Notion",          url: "https://www.notion.so",         note: "Workspace" },
-    { label: "Zotero",          url: "https://www.zotero.org",        note: "References" },
-    { label: "Research Rabbit", url: "https://www.researchrabbit.ai", note: "Citation maps" },
-    { label: "Gemini",          url: "https://gemini.google.com",     note: "AI assistant" },
-    { label: "Lit Synthesis Matrix", url: "https://claude.site", note: "Claude artifact" },
-    { label: "Methods Sanity Checker", url: "https://claude.site", note: "Claude artifact" },
-    { label: "Abstract Sharpener", url: "https://claude.site", note: "Claude artifact" }
-  ]},
-  supervisor: {
-    deliverable: "Qualifying Paper — Methods Section Draft",
-    status: "In Progress",
-    cycle_start: "2026-06-15T09:00:00.000Z",
-    milestones: [
-      { task: "Finalize sampling frame rationale", done: true },
-      { task: "Draft data collection procedures", done: true },
-      { task: "Write analytic strategy subsection", done: false },
-      { task: "Integrate advisor comments from last memo", done: false },
-      { task: "Send full section for review", done: false }
-    ],
-    last_discussion: "**Agreed terms:** narrow the sample to two districts; justify the comparative case logic explicitly. **Advisor flagged:** the coding scheme needs an inter-rater reliability plan before IRB submission. **Next meeting expects:** a complete methods draft plus a one-page IRB timeline."
-  },
-  week: {
-    agenda: [
-      { day: "Monday",    time: "9:00 AM",  name: "Writing block — methods section" },
-      { day: "Tuesday",   time: "2:00 PM",  name: "EDU 801 seminar" },
-      { day: "Tuesday",   time: "4:30 PM",  name: "Office hours with advisor" },
-      { day: "Wednesday", time: "12:00 PM", name: "Department colloquium" },
-      { day: "Thursday",  time: "10:00 AM", name: "EDU 845 seminar" },
-      { day: "Friday",    time: "9:00 AM",  name: "Writing group check-in" },
-      { day: "Friday",    time: "3:00 PM",  name: "Send methods draft to advisor" }
-    ],
-    weekend: [
-      { name: "Annotate two queue papers", when: "Sat AM" },
-      { name: "Draft colloquium reflection memo", when: "Sat PM" },
-      { name: "Rest — no dissertation guilt", when: "Sun" }
-    ],
-    classes: [
-      { name: "EDU 801 · Advanced Qualitative Methods", meets: "Tue 2:00 PM" },
-      { name: "EDU 845 · Sociology of Education Seminar", meets: "Thu 10:00 AM" }
-    ],
-    events: [
-      { name: "Department Colloquium — visiting scholar", when: "Wed 12:00 PM" },
-      { name: "Writing group check-in", when: "Fri 9:00 AM" }
-    ],
-    deadlines: [
-      { name: "Methods draft to advisor", due: "Fri Jul 10" },
-      { name: "Colloquium reflection memo", due: "Mon Jul 13" }
-    ]
-  },
-  roadmap: { milestones: [
-    { title: "Coursework", state: "Completed", note: "Core sequence finished Spring 2026" },
-    { title: "Qualifying Paper", state: "Active Focus", note: "Methods section in progress" },
-    { title: "Proposal Defense", state: "Future", note: "Target: Spring 2027" },
-    { title: "IRB Approval", state: "Future", note: "Submit after proposal defense" },
-    { title: "Dissertation Defense", state: "Future", note: "Target: Spring 2029" }
-  ]},
-  courses: { courses: [
-    { code: "EDU 801", title: "Advanced Qualitative Methods", term: "Summer 2026", materials: [
-      { label: "Week 5 lecture notes", kind: "Notes", link: "#" },
-      { label: "Coding workshop slides", kind: "Slides", link: "#" },
-      { label: "Field methods reader.pdf", kind: "PDF", link: "#" }
-    ]},
-    { code: "EDU 845", title: "Sociology of Education Seminar", term: "Summer 2026", materials: [
-      { label: "Seminar response papers", kind: "Notes", link: "#" },
-      { label: "Final project outline", kind: "Project", link: "#" }
-    ]},
-    { code: "STA 710", title: "Applied Multilevel Modeling", term: "Spring 2026", materials: [
-      { label: "HLM problem sets", kind: "Project", link: "#" },
-      { label: "Course slide archive", kind: "Slides", link: "#" }
-    ]}
-  ]},
-  journals: { journals: [
-    { name: "American Educational Research Journal", focus: "Original empirical and theoretical studies across education research", guidelines: "https://journals.sagepub.com/author-instructions/AER" },
-    { name: "Sociology of Education", focus: "Studies of how social institutions and processes shape educational outcomes", guidelines: "https://journals.sagepub.com/author-instructions/SOE" },
-    { name: "Qualitative Inquiry", focus: "Methodological innovation in qualitative research across disciplines", guidelines: "https://journals.sagepub.com/author-instructions/QIX" }
-  ]},
-  literature: { entries: [
-    { title: "Street-Level Bureaucracy and Teacher Discretion", year: 2021, status: "To-Read",
-      tags: ["policy","qualitative"], pdf: "", media: "",
-      summary: "Recommended by advisor as the frame for the discretion argument in chapter framing." },
-    { title: "Comparative Case Study Design in Education", year: 2017, status: "To-Read",
-      tags: ["methods","case-study"], pdf: "", media: "",
-      summary: "Directly relevant to the two-district sampling justification." },
-    { title: "Culturally Sustaining Pedagogies", year: 2014, status: "Read",
-      tags: ["theory","equity"], pdf: "", media: "",
-      summary: "Core theoretical anchor; key distinction between responsive and sustaining stances noted in Zotero." },
-    { title: "Thematic Analysis: A Reflexive Approach", year: 2019, status: "Read",
-      tags: ["methods","qualitative"], pdf: "", media: "",
-      summary: "Adopted the six-phase reflexive TA process for the coding plan." }
-  ]},
-  pipelines: {
-    submissions: [
-      { title: "Discretion at the Margins (with advisor)", journal: "Sociology of Education", status: "Under Review" },
-      { title: "Methods reflection short piece", journal: "Qualitative Inquiry", status: "Drafting" }
-    ],
-    conferences: [
-      { name: "AERA Annual Meeting", date: "Apr 2027", attendance: "Presenting", status: "Abstract Submitted" },
-      { name: "Sociology of Ed Association", date: "Feb 2027", attendance: "Spectator", status: "Planned" }
-    ],
-    grants: [
-      { name: "NAEd/Spencer Dissertation Fellowship", sponsor: "Spencer Foundation", deadline: "Oct 2026", status: "Drafting" },
-      { name: "Graduate Research Travel Grant", sponsor: "Graduate School", deadline: "Sep 2026", status: "Scouting" }
-    ],
-    programs: [
-      { name: "Summer Institute in Ethnography", org: "Method School", status: "Applied", note: "Decision expected August" },
-      { name: "Departmental TA Mentorship Program", org: "Home department", status: "Watching", note: "Opens in Fall" }
-    ]
-  },
-  writing: {
-    project: "Qualifying Paper",
-    phase: "Pre-Candidacy · transitions to Dissertation chapters upon candidacy",
-    sections: [
-      { name: "Introduction", progress: 100 },
-      { name: "Literature Review", progress: 85 },
-      { name: "Methods", progress: 45 },
-      { name: "Preliminary Findings", progress: 10 }
-    ]
-  }
-};
-
-/* ---------- Small helpers ---------- */
 function badgeClass(status){
   var s = String(status || "").toLowerCase();
   if (/accepted|awarded|completed|ready|attended/.test(s)) return "badge-green";
@@ -1253,25 +1354,9 @@ function badgeClass(status){
   return "badge-gray";
 }
 function badge(status){
-  return '<span class="badge ' + badgeClass(status) + '"><span class="bd"></span>' + esc(status) + '</span>';
+  return '<span class="badge ' + badgeClass(status) + '"><span class="bd"></span>' + esc(status) + "</span>";
 }
-function setVisible(el, show){
-  if (show){
-    if (el.style.display === "none") el.style.display = "";
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){ el.classList.remove("is-hidden"); });
-    });
-  } else {
-    el.classList.add("is-hidden");
-    var onEnd = function(ev){
-      if (ev.propertyName === "opacity" && el.classList.contains("is-hidden")){
-        el.style.display = "none";
-      }
-      el.removeEventListener("transitionend", onEnd);
-    };
-    el.addEventListener("transitionend", onEnd);
-  }
-}
+
 function daysCountUp(el, days){
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (reduce || days === 0){ el.textContent = String(days); return; }
@@ -1279,14 +1364,112 @@ function daysCountUp(el, days){
   function frame(ts){
     if (!t0) t0 = ts;
     var p = Math.min(1, (ts - t0) / 700);
-    var eased = 1 - Math.pow(1 - p, 3);
-    el.textContent = String(Math.round(eased * days));
+    el.textContent = String(Math.round((1 - Math.pow(1 - p, 3)) * days));
     if (p < 1) requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 }
 
-/* ---------- Page navigation (hash-routed) ---------- */
+/* ---------------- local overrides + git-gateway write-back ---------------- */
+var overrides = (function(){
+  var KEY = "scholar-command-overrides";
+  var mem = { lit: {}, subs: {} };
+  try { mem = JSON.parse(localStorage.getItem(KEY)) || mem; } catch(e){}
+  if (!mem.lit) mem.lit = {};
+  if (!mem.subs) mem.subs = {};
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch(e){} }
+  return {
+    litStatus: function(title){ return mem.lit[title]; },
+    setLit: function(title, status){ mem.lit[title] = status; save(); },
+    sub: function(key){ return mem.subs[key]; },
+    setSub: function(key, val){ mem.subs[key] = val; save(); }
+  };
+})();
+
+function identityUser(){
+  return (window.netlifyIdentity && window.netlifyIdentity.currentUser()) || null;
+}
+/* Reads the JSON file from the repo through Netlify git-gateway,
+   applies `mutate`, and commits it back. Requires a logged-in
+   Netlify Identity session (the same login used by /admin/). */
+function gitSave(path, message, mutate){
+  var user = identityUser();
+  if (!user) return Promise.reject(new Error("not-logged-in"));
+  return user.jwt().then(function(token){
+    var api = "/.netlify/git/github/contents/" + path;
+    return fetch(api + "?ts=" + Date.now(), {
+      headers: { Authorization: "Bearer " + token }
+    }).then(function(r){
+      if (!r.ok) throw new Error("read-failed");
+      return r.json();
+    }).then(function(info){
+      var json = JSON.parse(decodeURIComponent(escape(atob(String(info.content).replace(/\n/g, "")))));
+      var updated = mutate(json) || json;
+      var body = {
+        message: message,
+        sha: info.sha,
+        content: btoa(unescape(encodeURIComponent(JSON.stringify(updated, null, 2))))
+      };
+      return fetch(api, {
+        method: "PUT",
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+    }).then(function(r){
+      if (!r.ok) throw new Error("write-failed");
+    });
+  });
+}
+
+/* ---------------- shared drawer ---------------- */
+var drawer = (function(){
+  var root = document.getElementById("drawer");
+  var backdrop = document.getElementById("drawer-backdrop");
+  var open = false;
+  function show(cfg){
+    document.getElementById("drawer-eyebrow").textContent = cfg.eyebrow || "";
+    document.getElementById("drawer-title").textContent = cfg.title || "";
+    document.getElementById("drawer-sub").innerHTML = cfg.sub || "";
+    document.getElementById("drawer-body").innerHTML = cfg.body || "";
+    root.classList.add("show");
+    backdrop.classList.add("show");
+    document.body.style.overflow = "hidden";
+    open = true;
+    if (cfg.wire) cfg.wire(document.getElementById("drawer-body"));
+  }
+  function hide(){
+    if (!open) return;
+    root.classList.remove("show");
+    backdrop.classList.remove("show");
+    document.body.style.overflow = "";
+    open = false;
+  }
+  backdrop.addEventListener("click", hide);
+  document.getElementById("drawer-close").addEventListener("click", hide);
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") hide(); });
+  return { show: show, hide: hide };
+})();
+
+/* ---------------- data engine ---------------- */
+function loadJSON(path){
+  return fetch(path, { cache: "no-store" })
+    .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+    .catch(function(){ return null; });
+}
+
+var DATA = {
+  settings:   { owner_name: "", tagline: "", calendar_feed: "" },
+  tools:      { tools: [] },
+  supervisor: null,
+  roadmap:    { milestones: [] },
+  courses:    { courses: [] },
+  journals:   { journals: [] },
+  literature: { entries: [] },
+  writing:    null,
+  pipelines:  { submissions: [], conferences: [], grants: [], programs: [] }
+};
+
+/* ---------------- routing ---------------- */
 var VIEWS = ["home", "advisor", "classes", "literature", "journals", "pipelines"];
 var TITLES = {
   home: "Dashboard", advisor: "Advisor", classes: "Classes",
@@ -1294,6 +1477,15 @@ var TITLES = {
 };
 var writingFilled = false;
 
+function fillWritingBars(){
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      document.querySelectorAll(".write-fill").forEach(function(f){
+        f.style.transform = "scaleX(" + (Number(f.getAttribute("data-p")) / 100) + ")";
+      });
+    });
+  });
+}
 function showView(name){
   if (VIEWS.indexOf(name) === -1) name = "home";
   VIEWS.forEach(function(v){
@@ -1304,18 +1496,9 @@ function showView(name){
   });
   document.getElementById("main-title").textContent = TITLES[name];
   window.scrollTo({ top: 0 });
-  if (name === "pipelines" && !writingFilled){
-    writingFilled = true;
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        document.querySelectorAll(".write-fill").forEach(function(f){
-          f.style.transform = "scaleX(" + (Number(f.getAttribute("data-p")) / 100) + ")";
-        });
-      });
-    });
-  }
+  drawer.hide();
+  if (name === "pipelines" && !writingFilled){ writingFilled = true; fillWritingBars(); }
 }
-
 document.querySelectorAll(".nav-btn").forEach(function(b){
   b.addEventListener("click", function(){
     var v = b.getAttribute("data-view");
@@ -1326,53 +1509,70 @@ document.querySelectorAll(".nav-btn").forEach(function(b){
 window.addEventListener("hashchange", function(){
   showView(location.hash.replace("#", ""));
 });
-
-/* Banner → Advisor page */
 document.getElementById("sentinel-banner").addEventListener("click", function(){
   if (location.hash !== "#advisor") location.hash = "advisor";
   else showView("advisor");
 });
 
-/* ---------- Header ---------- */
-function renderHeader(settings){
-  var now = new Date();
-  document.getElementById("today-date").textContent = now.toLocaleDateString(undefined, {
+/* ---------------- header + tools ---------------- */
+function renderHeader(){
+  document.getElementById("today-date").textContent = new Date().toLocaleDateString(undefined, {
     weekday: "short", month: "short", day: "numeric", year: "numeric"
   });
-  if (settings.owner_name){
-    document.getElementById("greeting").textContent = settings.owner_name;
+  if (DATA.settings.owner_name){
+    document.getElementById("greeting").textContent = DATA.settings.owner_name;
   }
 }
-
-/* ---------- Sidebar Tools ---------- */
-function renderTools(data){
-  document.getElementById("side-tools").innerHTML = (data.tools || []).map(function(t){
+function renderTools(){
+  var tools = DATA.tools.tools || [];
+  var host = document.getElementById("side-tools");
+  if (!tools.length){
+    host.innerHTML = '<div class="side-foot" style="padding:4px 8px">No tools yet — add launchers and Claude artifacts via Edit.</div>';
+    return;
+  }
+  host.innerHTML = tools.map(function(t){
     var initials = String(t.label || "?").trim().split(/\s+/).slice(0, 2)
       .map(function(w){ return w.charAt(0).toUpperCase(); }).join("");
     return '<a class="side-tool" href="' + esc(t.url) + '" target="_blank" rel="noopener">' +
       '<span class="tool-glyph">' + esc(initials) + '</span>' +
       '<span>' + esc(t.label) +
-      (t.note ? '<span class="tool-note">' + esc(t.note) + '</span>' : "") + '</span>' +
+      (t.note ? '<span class="tool-note">' + esc(t.note) + '</span>' : "") + "</span>" +
       '<svg class="arrow" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></a>';
   }).join("");
 }
 
-/* ---------- Supervisor Sentinel (banner + Advisor page) ---------- */
-function renderSentinel(data){
-  var deliverable = data.deliverable || "No deliverable set";
-  var status = data.status || "Not Started";
-  var items = data.milestones || [];
+/* ---------------- Supervisor Sentinel + voice logger ---------------- */
+function renderSentinel(){
+  var d = DATA.supervisor;
+  var bannerTitle = document.getElementById("banner-deliverable");
+  var bannerStatus = document.getElementById("banner-status");
+  var bannerProgress = document.getElementById("banner-progress");
+
+  if (!d){
+    bannerTitle.textContent = "No advisor deliverable set — open the Advisor page to begin";
+    bannerStatus.className = "badge badge-gray";
+    bannerStatus.innerHTML = '<span class="bd"></span>Not set';
+    bannerProgress.textContent = "";
+    document.getElementById("sentinel-deliverable").textContent = "Nothing tracked yet";
+    document.getElementById("sentinel-milestones").innerHTML =
+      '<li style="list-style:none">' + emptyState("supervisor", "Set your current deliverable, status, and micro-milestones.") + "</li>";
+    document.getElementById("sentinel-progress").textContent = "";
+    document.getElementById("log-body").innerHTML =
+      '<em style="color:var(--ink-soft)">No discussion logged yet. Use "Write / update this log" below, or record a voice memo with the microphone above.</em>';
+    return;
+  }
+
+  var deliverable = d.deliverable || "Untitled deliverable";
+  var status = d.status || "Not Started";
+  var items = d.milestones || [];
   var done = items.filter(function(m){ return m.done; }).length;
   var progressText = done + " / " + items.length + " micro-milestones";
 
-  /* Banner (top of every page) */
-  document.getElementById("banner-deliverable").textContent = deliverable;
-  var bs = document.getElementById("banner-status");
-  bs.className = "badge " + badgeClass(status);
-  bs.innerHTML = '<span class="bd"></span>' + esc(status);
-  document.getElementById("banner-progress").textContent = progressText;
+  bannerTitle.textContent = deliverable;
+  bannerStatus.className = "badge " + badgeClass(status);
+  bannerStatus.innerHTML = '<span class="bd"></span>' + esc(status);
+  bannerProgress.textContent = items.length ? progressText : "";
 
-  /* Advisor page card */
   document.getElementById("sentinel-deliverable").textContent = deliverable;
   var st = document.getElementById("sentinel-status");
   st.className = "badge " + badgeClass(status);
@@ -1381,84 +1581,931 @@ function renderSentinel(data){
   document.getElementById("sentinel-milestones").innerHTML = items.map(function(m){
     return '<li class="milestone' + (m.done ? " done" : "") + '">' +
       '<span class="tick"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span>' +
-      '<span class="m-text">' + esc(m.task) + '</span></li>';
-  }).join("");
-  document.getElementById("sentinel-progress").textContent = progressText + " cleared";
+      '<span class="m-text">' + esc(m.task) + "</span></li>";
+  }).join("") || '<li style="list-style:none">' + emptyState("supervisor", "No micro-milestones yet.") + "</li>";
+  document.getElementById("sentinel-progress").textContent = items.length ? progressText + " cleared" : "";
 
-  var log = esc(data.last_discussion || "No discussion logged yet. Use the button below to write your first advising note.")
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .split(/\n{2,}/).map(function(p){ return "<p>" + p.replace(/\n/g, "<br>") + "</p>"; }).join("");
-  document.getElementById("log-body").innerHTML = log;
+  document.getElementById("log-body").innerHTML = d.last_discussion ?
+    mdToHTML(d.last_discussion) :
+    '<em style="color:var(--ink-soft)">No discussion logged yet. Use "Write / update this log" below, or record a voice memo with the microphone above.</em>';
 
-  /* Days Active ticker (banner + Advisor page) */
-  var start = data.cycle_start ? new Date(data.cycle_start) : new Date();
+  var start = d.cycle_start ? new Date(d.cycle_start) : new Date();
   var days = Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
   daysCountUp(document.getElementById("days-active"), days);
   daysCountUp(document.getElementById("days-active-full"), days);
-}
 
-/* ---------- Weekend + Daily Agenda + Week ---------- */
-var DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-
-function renderWeekModule(data){
-  /* This Weekend */
-  var weekend = data.weekend || [];
-  document.getElementById("weekend-body").innerHTML = weekend.map(function(it){
-    return '<div class="week-item"><span class="wi-name">' + esc(it.name) +
-      '</span><span class="date-tag">' + esc(it.when || "") + '</span></div>';
-  }).join("") || '<div class="lit-empty">Nothing planned for the weekend yet.</div>';
-
-  /* Daily Agenda: shows entries whose day matches today */
-  var todayName = DAY_NAMES[new Date().getDay()];
-  var todays = (data.agenda || []).filter(function(a){ return a.day === todayName; });
-  document.getElementById("agenda-body").innerHTML = todays.map(function(a){
-    return '<div class="agenda-item"><span class="agenda-time">' + esc(a.time || "—") + '</span>' +
-      '<span class="wi-name">' + esc(a.name) + '</span></div>';
-  }).join("") || '<div class="lit-empty">Nothing scheduled for ' + esc(todayName) + '. Enjoy the open runway.</div>';
-
-  /* This Week in a Nutshell */
-  function rows(list, nameKey, dateKey){
-    return (list || []).map(function(it){
-      return '<div class="week-item"><span class="wi-name">' + esc(it[nameKey]) +
-        '</span><span class="date-tag">' + esc(it[dateKey]) + '</span></div>';
-    }).join("") || '<div class="lit-empty">Nothing logged.</div>';
+  if (d.voice_note){
+    var slot = document.getElementById("voice-slot");
+    slot.insertAdjacentHTML("afterbegin",
+      '<div class="voice-strip"><div class="voice-strip-row">' +
+      '<span class="voice-hint">Saved voice memo (from CMS)</span></div>' +
+      '<audio controls src="' + esc(d.voice_note) + '"></audio></div>');
   }
-  document.getElementById("week-body").innerHTML =
-    '<div class="week-group"><div class="week-label">Current Classes</div>' + rows(data.classes, "name", "meets") + '</div>' +
-    '<div class="week-group"><div class="week-label">Weekly Events</div>' + rows(data.events, "name", "when") + '</div>' +
-    '<div class="week-group"><div class="week-label">Immediate Deadlines</div>' + rows(data.deadlines, "name", "due") + '</div>';
 }
 
-/* Weekend toggle (state remembered on this device) */
-(function(){
-  var KEY = "scholar-command-weekend-open";
-  var btn = document.getElementById("weekend-toggle");
-  var panel = document.getElementById("weekend-panel");
-  var open = true;
-  try { open = localStorage.getItem(KEY) !== "false"; } catch(e){}
-  btn.setAttribute("aria-expanded", String(open));
-  panel.classList.toggle("open", open);
+/* Browser-native voice recorder: records a meeting recap, plays it
+   back, and offers the file for download so it can be attached to
+   the Supervisor entry's "Voice Memo" upload field in the CMS. */
+(function voiceLogger(){
+  var btn = document.getElementById("rec-btn");
+  var timeEl = document.getElementById("rec-time");
+  var slot = document.getElementById("voice-slot");
+  var recorder = null, chunks = [], timer = null, t0 = 0, stream = null;
+
+  function fmt(ms){
+    var s = Math.floor(ms / 1000);
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }
+  function stopStream(){
+    if (stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream = null; }
+  }
   btn.addEventListener("click", function(){
-    open = !open;
-    btn.setAttribute("aria-expanded", String(open));
-    panel.classList.toggle("open", open);
-    try { localStorage.setItem(KEY, String(open)); } catch(e){}
+    if (recorder && recorder.state === "recording"){ recorder.stop(); return; }
+    if (!navigator.mediaDevices || !window.MediaRecorder){
+      toast("Voice recording isn't supported in this browser.");
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s){
+      stream = s;
+      chunks = [];
+      recorder = new MediaRecorder(s);
+      recorder.ondataavailable = function(e){ if (e.data.size) chunks.push(e.data); };
+      recorder.onstop = function(){
+        clearInterval(timer);
+        btn.classList.remove("recording");
+        timeEl.hidden = true;
+        stopStream();
+        var blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+        var url = URL.createObjectURL(blob);
+        var stamp = new Date().toISOString().slice(0, 10);
+        var strip = document.createElement("div");
+        strip.className = "voice-strip";
+        strip.innerHTML =
+          '<div class="voice-strip-row"><span class="voice-hint">New recording · ' + fmt(Date.now() - t0) + "</span>" +
+          '<span style="display:flex;gap:8px">' +
+          '<a class="edit-btn" download="advisor-log-' + stamp + '.webm" href="' + url + '">Download</a>' +
+          '<button class="edit-btn strip-discard" type="button">Discard</button></span></div>' +
+          '<audio controls src="' + url + '"></audio>' +
+          '<span class="voice-hint">To keep it permanently: download, then attach it to the Voice Memo field via "Write / update this log".</span>';
+        strip.querySelector(".strip-discard").addEventListener("click", function(){
+          URL.revokeObjectURL(url);
+          strip.remove();
+        });
+        slot.appendChild(strip);
+        toast("Recording ready — cached on this page until you attach or discard it.");
+      };
+      recorder.start();
+      t0 = Date.now();
+      btn.classList.add("recording");
+      timeEl.hidden = false;
+      timeEl.textContent = "0:00";
+      timer = setInterval(function(){ timeEl.textContent = fmt(Date.now() - t0); }, 500);
+    }).catch(function(){
+      toast("Microphone access was blocked. Allow it in the browser to record.");
+    });
   });
 })();
 
-/* ---------- Scratchpad ---------- */
+document.getElementById("log-toggle").addEventListener("click", function(){
+  var open = this.getAttribute("aria-expanded") === "true";
+  this.setAttribute("aria-expanded", String(!open));
+  document.getElementById("log-panel").classList.toggle("open", !open);
+});
+
+/* ============================================================
+   CALENDAR ENGINE — one feed, three widgets
+   ============================================================ */
+var CAL = { events: [], y: 0, m: 0, mode: "none" };
+
+/* Accepts a Google Calendar embed URL, a Google/Notion ICS link,
+   or a webcal:// address, and normalizes it to a fetchable feed. */
+function resolveFeed(url){
+  url = String(url || "").trim();
+  if (!url) return { mode: "none" };
+  if (/^webcal:\/\//i.test(url)) url = url.replace(/^webcal:\/\//i, "https://");
+  if (/calendar\.google\.com/.test(url) && /\/embed/.test(url)){
+    var m = url.match(/[?&]src=([^&]+)/);
+    if (m){
+      return {
+        mode: "ics",
+        url: "https://calendar.google.com/calendar/ical/" + encodeURIComponent(decodeURIComponent(m[1])) + "/public/basic.ics",
+        embed: url
+      };
+    }
+    return { mode: "iframe", url: url };
+  }
+  if (/\.ics(\?|$)/i.test(url) || /\/ical\//.test(url)) return { mode: "ics", url: url };
+  return { mode: "iframe", url: url };
+}
+
+function fetchText(url){
+  return fetch(url).then(function(r){
+    if (!r.ok) throw new Error(r.status);
+    return r.text();
+  }).catch(function(){
+    /* Most calendar hosts don't send CORS headers; retry through a public read proxy. */
+    return fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(url))
+      .then(function(r){ if (!r.ok) throw new Error(r.status); return r.text(); });
+  });
+}
+
+function parseICSDate(val, params){
+  params = params || "";
+  if (/VALUE=DATE/.test(params) || /^\d{8}$/.test(val)){
+    return { date: new Date(+val.slice(0,4), +val.slice(4,6) - 1, +val.slice(6,8)), allDay: true };
+  }
+  var m = val.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?(Z)?$/);
+  if (!m) return null;
+  if (m[7]){
+    return { date: new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0))), allDay: false };
+  }
+  /* Floating / TZID times are treated as local wall-clock time. */
+  return { date: new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)), allDay: false };
+}
+
+function unescapeICS(s){
+  return String(s || "").replace(/\\n/gi, " · ").replace(/\\([,;\\])/g, "$1");
+}
+
+var BYDAY_MAP = { SU:0, MO:1, TU:2, WE:3, TH:4, FR:5, SA:6 };
+
+function parseICS(text){
+  /* Unfold wrapped lines per RFC 5545. */
+  var raw = text.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "").split(/\r?\n/);
+  var events = [];
+  var cur = null;
+  raw.forEach(function(line){
+    if (line === "BEGIN:VEVENT"){ cur = { props: {} }; return; }
+    if (line === "END:VEVENT"){ if (cur) events.push(cur); cur = null; return; }
+    if (!cur) return;
+    var idx = line.indexOf(":");
+    if (idx === -1) return;
+    var keyPart = line.slice(0, idx), val = line.slice(idx + 1);
+    var semi = keyPart.indexOf(";");
+    var key = semi === -1 ? keyPart : keyPart.slice(0, semi);
+    var params = semi === -1 ? "" : keyPart.slice(semi + 1);
+    if (key === "EXDATE"){
+      (cur.props.EXDATE = cur.props.EXDATE || []).push({ val: val, params: params });
+      return;
+    }
+    cur.props[key] = { val: val, params: params };
+  });
+
+  var horizonStart = new Date(); horizonStart.setDate(horizonStart.getDate() - 45); horizonStart.setHours(0,0,0,0);
+  var horizonEnd = new Date();   horizonEnd.setDate(horizonEnd.getDate() + 130);    horizonEnd.setHours(23,59,59,0);
+
+  var out = [];
+  events.forEach(function(ev){
+    var p = ev.props;
+    if (!p.DTSTART || !p.SUMMARY) return;
+    var start = parseICSDate(p.DTSTART.val, p.DTSTART.params);
+    if (!start) return;
+    var title = unescapeICS(p.SUMMARY.val);
+    var location = p.LOCATION ? unescapeICS(p.LOCATION.val) : "";
+    var exdates = {};
+    (p.EXDATE || []).forEach(function(x){
+      x.val.split(",").forEach(function(v){
+        var d = parseICSDate(v.trim(), x.params);
+        if (d) exdates[d.date.getTime()] = true;
+      });
+    });
+    function push(dt){
+      if (dt < horizonStart || dt > horizonEnd) return;
+      if (exdates[dt.getTime()]) return;
+      out.push({ start: dt, title: title, location: location, allDay: start.allDay });
+    }
+    if (!p.RRULE){ push(start.date); return; }
+
+    /* Minimal RRULE expansion: DAILY / WEEKLY (+BYDAY) / MONTHLY / YEARLY,
+       honoring INTERVAL, UNTIL, and COUNT within the render horizon. */
+    var rule = {};
+    p.RRULE.val.split(";").forEach(function(part){
+      var kv = part.split("=");
+      rule[kv[0]] = kv[1];
+    });
+    var interval = Math.max(1, parseInt(rule.INTERVAL || "1", 10));
+    var until = rule.UNTIL ? (parseICSDate(rule.UNTIL, "") || {}).date : null;
+    var count = rule.COUNT ? parseInt(rule.COUNT, 10) : Infinity;
+    var made = 0;
+    var limitEnd = until && until < horizonEnd ? until : horizonEnd;
+
+    if (rule.FREQ === "WEEKLY"){
+      var days = rule.BYDAY ?
+        rule.BYDAY.split(",").map(function(d){ return BYDAY_MAP[d.replace(/^[-+]?\d+/, "")]; }).filter(function(d){ return d != null; }) :
+        [start.date.getDay()];
+      var weekCursor = new Date(start.date);
+      weekCursor.setHours(start.date.getHours(), start.date.getMinutes(), 0, 0);
+      weekCursor.setDate(weekCursor.getDate() - weekCursor.getDay()); /* back to Sunday of DTSTART week */
+      var guard = 0;
+      while (weekCursor <= limitEnd && made < count && guard++ < 400){
+        for (var i = 0; i < 7; i++){
+          if (days.indexOf(i) === -1) continue;
+          var occ = new Date(weekCursor);
+          occ.setDate(weekCursor.getDate() + i);
+          occ.setHours(start.date.getHours(), start.date.getMinutes(), 0, 0);
+          if (occ < start.date || occ > limitEnd) continue;
+          if (made >= count) break;
+          made++;
+          push(occ);
+        }
+        weekCursor.setDate(weekCursor.getDate() + 7 * interval);
+      }
+    } else if (rule.FREQ === "DAILY"){
+      var d1 = new Date(start.date), g1 = 0;
+      while (d1 <= limitEnd && made < count && g1++ < 2000){
+        made++; push(new Date(d1));
+        d1.setDate(d1.getDate() + interval);
+      }
+    } else if (rule.FREQ === "MONTHLY"){
+      var d2 = new Date(start.date), g2 = 0;
+      while (d2 <= limitEnd && made < count && g2++ < 120){
+        made++; push(new Date(d2));
+        d2.setMonth(d2.getMonth() + interval);
+      }
+    } else if (rule.FREQ === "YEARLY"){
+      var d3 = new Date(start.date), g3 = 0;
+      while (d3 <= limitEnd && made < count && g3++ < 30){
+        made++; push(new Date(d3));
+        d3.setFullYear(d3.getFullYear() + interval);
+      }
+    } else {
+      push(start.date);
+    }
+  });
+
+  out.sort(function(a, b){ return a.start - b.start; });
+  return out;
+}
+
+function sameDay(a, b){
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+function fmtTime(d, allDay){
+  if (allDay) return "All day";
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function renderMonth(){
+  var slot = document.getElementById("cal-slot");
+  var y = CAL.y, m = CAL.m;
+  document.getElementById("cal-month").textContent =
+    new Date(y, m, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+  var firstDow = new Date(y, m, 1).getDay();
+  var daysInMonth = new Date(y, m + 1, 0).getDate();
+  var daysPrev = new Date(y, m, 0).getDate();
+  var totalCells = Math.ceil((firstDow + daysInMonth) / 7) * 7;
+  var today = new Date();
+
+  var html = ["SUN","MON","TUE","WED","THU","FRI","SAT"].map(function(d){
+    return '<div class="cal-dow">' + d + "</div>";
+  }).join("");
+
+  for (var c = 0; c < totalCells; c++){
+    var dayNum, cellDate, out = false;
+    if (c < firstDow){
+      dayNum = daysPrev - firstDow + 1 + c;
+      cellDate = new Date(y, m - 1, dayNum); out = true;
+    } else if (c - firstDow < daysInMonth){
+      dayNum = c - firstDow + 1;
+      cellDate = new Date(y, m, dayNum);
+    } else {
+      dayNum = c - firstDow - daysInMonth + 1;
+      cellDate = new Date(y, m + 1, dayNum); out = true;
+    }
+    var evs = CAL.events.filter(function(e){ return sameDay(e.start, cellDate); });
+    var chips = evs.slice(0, 2).map(function(e){
+      return '<span class="cal-ev" title="' + esc(e.title) + '">' + esc(e.title) + "</span>";
+    }).join("");
+    if (evs.length > 2) chips += '<span class="cal-more">+' + (evs.length - 2) + " more</span>";
+    if (evs.length) chips += '<span class="cal-pip" aria-hidden="true"></span>';
+    html += '<div class="cal-cell' + (out ? " out" : "") + (sameDay(cellDate, today) ? " today" : "") + '">' +
+      '<span class="cal-daynum">' + dayNum + "</span>" + chips + "</div>";
+  }
+  slot.innerHTML = '<div class="cal-grid">' + html + "</div>";
+}
+
+function renderAgenda(){
+  var host = document.getElementById("agenda-body");
+  var countEl = document.getElementById("agenda-count");
+  if (CAL.mode !== "ics"){
+    countEl.textContent = "";
+    host.innerHTML = emptyState("settings",
+      CAL.mode === "none" ?
+        "Connect a calendar feed and today's events appear here automatically." :
+        "The daily agenda needs the ICS feed link (not just an embed page) to read events.");
+    return;
+  }
+  var today = new Date();
+  var evs = CAL.events.filter(function(e){ return sameDay(e.start, today); });
+  countEl.textContent = evs.length ? evs.length + " today" : "";
+  host.innerHTML = evs.map(function(e){
+    return '<div class="agenda-item"><span class="agenda-time">' + esc(fmtTime(e.start, e.allDay)) + "</span>" +
+      '<span class="wi-name">' + esc(e.title) + (e.location ? ' <span style="color:var(--ink-faint)">· ' + esc(e.location) + "</span>" : "") + "</span></div>";
+  }).join("") ||
+    '<div class="empty"><span class="empty-glyph">☀</span>Nothing on the calendar today. Open runway.</div>';
+}
+
+function renderWeekList(){
+  var host = document.getElementById("week-body");
+  if (CAL.mode !== "ics"){
+    host.innerHTML = emptyState("settings",
+      CAL.mode === "none" ?
+        "Connect a calendar feed and the next 7 days summarize themselves here." :
+        "The weekly summary needs the ICS feed link (not just an embed page) to read events.");
+    return;
+  }
+  var start = new Date(); start.setHours(0, 0, 0, 0);
+  var end = new Date(start); end.setDate(end.getDate() + 7);
+  var evs = CAL.events.filter(function(e){ return e.start >= start && e.start < end; });
+  host.innerHTML = evs.map(function(e){
+    var when = e.start.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) +
+      (e.allDay ? "" : " · " + fmtTime(e.start, false));
+    return '<div class="week-item"><span class="wi-name">' + esc(e.title) + "</span>" +
+      '<span class="date-tag">' + esc(when) + "</span></div>";
+  }).join("") ||
+    '<div class="empty"><span class="empty-glyph">◌</span>Nothing scheduled in the next 7 days.</div>';
+}
+
+function initCalendar(){
+  var now = new Date();
+  CAL.y = now.getFullYear();
+  CAL.m = now.getMonth();
+  var feed = resolveFeed(DATA.settings.calendar_feed || DATA.settings.calendar_embed);
+  CAL.mode = feed.mode;
+  var slot = document.getElementById("cal-slot");
+
+  document.getElementById("cal-prev").addEventListener("click", function(){
+    CAL.m--; if (CAL.m < 0){ CAL.m = 11; CAL.y--; } renderMonth();
+  });
+  document.getElementById("cal-next").addEventListener("click", function(){
+    CAL.m++; if (CAL.m > 11){ CAL.m = 0; CAL.y++; } renderMonth();
+  });
+
+  if (feed.mode === "none"){
+    slot.innerHTML = emptyState("settings",
+      "No calendar connected yet. Paste your public Google Calendar link (embed URL or ICS address) into Settings.");
+    renderAgenda(); renderWeekList();
+    return;
+  }
+  if (feed.mode === "iframe"){
+    slot.innerHTML = '<iframe class="cal-frame" src="' + esc(feed.url) + '" title="Month calendar" loading="lazy"></iframe>';
+    renderAgenda(); renderWeekList();
+    return;
+  }
+  slot.innerHTML = '<div class="empty"><span class="empty-glyph">↻</span>Reading your calendar feed…</div>';
+  fetchText(feed.url).then(function(text){
+    CAL.events = parseICS(text);
+    document.getElementById("cal-nav").hidden = false;
+    renderMonth(); renderAgenda(); renderWeekList();
+  }).catch(function(){
+    CAL.mode = "error";
+    if (feed.embed){
+      slot.innerHTML = '<iframe class="cal-frame" src="' + esc(feed.embed) + '" title="Month calendar" loading="lazy"></iframe>';
+    } else {
+      slot.innerHTML = emptyState("settings",
+        "Couldn't read the feed. Check that the calendar is public and the link is its ICS address.");
+    }
+    document.getElementById("agenda-body").innerHTML = emptyState("settings", "Feed unreachable — agenda paused.");
+    document.getElementById("week-body").innerHTML = emptyState("settings", "Feed unreachable — weekly summary paused.");
+  });
+}
+
+/* ============================================================
+   MILESTONE ROADMAP — academic progress highway
+   ============================================================ */
+var hwOpenIdx = -1;
+function renderRoadmap(){
+  var host = document.getElementById("highway");
+  var items = DATA.roadmap.milestones || [];
+  if (!items.length){
+    host.innerHTML = "";
+    document.querySelector(".highway-wrap").innerHTML = emptyState("roadmap",
+      "Chart your institutional hurdles: coursework, qualifying paper, proposal, defense.");
+    return;
+  }
+  var stateClass = { "Completed": "completed", "Active Focus": "active", "Future": "future" };
+  host.innerHTML = items.map(function(m, i){
+    var cls = stateClass[m.state] || "future";
+    return '<div class="hw-stop ' + cls + '" data-i="' + i + '">' +
+      '<button class="hw-node" aria-label="Open details for ' + esc(m.title) + '">' +
+      (cls === "completed" ?
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>' :
+        (cls === "active" ? '<svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>' : "")) +
+      "</button>" +
+      '<div class="hw-title">' + esc(m.title) + "</div>" +
+      (m.date ? '<div class="hw-date">' + esc(m.date) + "</div>" : "") +
+      "</div>";
+  }).join("");
+
+  host.querySelectorAll(".hw-node").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var stop = btn.closest(".hw-stop");
+      var i = Number(stop.getAttribute("data-i"));
+      var collapse = document.getElementById("hw-detail-collapse");
+      if (hwOpenIdx === i){
+        hwOpenIdx = -1;
+        stop.classList.remove("open");
+        collapse.classList.remove("open");
+        return;
+      }
+      hwOpenIdx = i;
+      host.querySelectorAll(".hw-stop").forEach(function(s){ s.classList.remove("open"); });
+      stop.classList.add("open");
+      renderRoadmapPane(items[i], i);
+      collapse.classList.add("open");
+    });
+  });
+}
+function renderRoadmapPane(m, idx){
+  var pane = document.getElementById("hw-pane");
+  var subs = m.subtasks || [];
+  pane.innerHTML =
+    '<div class="hw-pane-head"><div>' +
+    '<h4 class="hw-pane-title">' + esc(m.title) + "</h4>" +
+    (m.note ? '<p class="hw-pane-note">' + esc(m.note) + "</p>" : "") +
+    "</div><div style='display:flex;gap:8px;align-items:center'>" +
+    (m.date ? '<span class="date-tag">' + esc(m.date) + "</span>" : "") +
+    badge(m.state || "Future") + editLink("roadmap", "Edit") + "</div></div>" +
+    (subs.length ?
+      '<ul class="hw-subs">' + subs.map(function(s, j){
+        var key = "roadmap|" + idx + "|" + j;
+        var isDone = overrides.sub(key) != null ? overrides.sub(key) : !!s.done;
+        return '<li class="milestone toggleable' + (isDone ? " done" : "") + '" data-key="' + key + '" data-mi="' + idx + '" data-si="' + j + '">' +
+          '<span class="tick" role="checkbox" tabindex="0" aria-checked="' + isDone + '">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span>' +
+          '<span class="m-text">' + esc(s.task) + "</span>" +
+          (s.when ? ' <span class="date-tag" style="margin-left:auto">' + esc(s.when) + "</span>" : "") +
+          "</li>";
+      }).join("") + "</ul>" :
+      '<p class="hw-pane-note" style="margin-top:10px">No sub-tasks logged for this milestone yet — add them in the CMS to track execution here.</p>');
+
+  pane.querySelectorAll(".milestone.toggleable").forEach(function(li){
+    var tick = li.querySelector(".tick");
+    function flip(){
+      var now = !li.classList.contains("done");
+      li.classList.toggle("done", now);
+      tick.setAttribute("aria-checked", String(now));
+      overrides.setSub(li.getAttribute("data-key"), now);
+      var mi = Number(li.getAttribute("data-mi")), si = Number(li.getAttribute("data-si"));
+      if (DATA.roadmap.milestones[mi] && DATA.roadmap.milestones[mi].subtasks && DATA.roadmap.milestones[mi].subtasks[si]){
+        DATA.roadmap.milestones[mi].subtasks[si].done = now;
+      }
+      gitSave("content/data/roadmap.json", "dashboard: toggle roadmap sub-task", function(json){
+        if (json.milestones && json.milestones[mi] && json.milestones[mi].subtasks && json.milestones[mi].subtasks[si]){
+          json.milestones[mi].subtasks[si].done = now;
+        }
+        return json;
+      }).then(function(){
+        toast("Synced to the CMS — the site will redeploy in a moment.");
+      }).catch(function(){
+        toast("Saved on this device. Log in via /admin/ to sync it to the repo.");
+      });
+    }
+    tick.addEventListener("click", flip);
+    tick.addEventListener("keydown", function(e){
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); flip(); }
+    });
+  });
+}
+
+/* ============================================================
+   CLASSES — course drive with workspace drawers
+   ============================================================ */
+var FOLDERS = [
+  { key: "Lectures & Slides",     hint: "presentations, slides, and PDFs" },
+  { key: "Assignments & Coding",  hint: "problem sets, scripts, and code snippets" },
+  { key: "Core Readings",         hint: "seminar papers and required texts" }
+];
+function renderCourses(){
+  var grid = document.getElementById("course-grid");
+  var courses = DATA.courses.courses || [];
+  document.getElementById("courses-count").textContent = courses.length ? courses.length + " courses" : "";
+  if (!courses.length){
+    grid.innerHTML = emptyState("courses", "No courses yet. Add your first class and its materials.");
+    return;
+  }
+  grid.innerHTML = courses.map(function(c, i){
+    return '<div class="course" role="button" tabindex="0" data-i="' + i + '">' +
+      '<div class="course-code">' + esc(c.code || "") + "</div>" +
+      '<div class="course-title">' + esc(c.title) + "</div>" +
+      '<div class="course-term">' + esc(c.term || "") + "</div>" +
+      '<div class="course-meta"><span class="course-count">' + (c.materials || []).length + " assets</span>" +
+      '<svg class="go-arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>' +
+      "</div>";
+  }).join("");
+  grid.querySelectorAll(".course").forEach(function(card){
+    function open(){ openCourseDrawer(courses[Number(card.getAttribute("data-i"))]); }
+    card.addEventListener("click", open);
+    card.addEventListener("keydown", function(e){
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); open(); }
+    });
+  });
+}
+function openCourseDrawer(c){
+  var mats = c.materials || [];
+  var body = FOLDERS.map(function(f, fi){
+    var inFolder = mats.filter(function(m){ return (m.folder || FOLDERS[0].key) === f.key; });
+    return '<div class="folder' + (fi === 0 ? " open" : "") + '">' +
+      '<button class="folder-head" type="button">📁 ' + esc(f.key) +
+      '<span class="f-count">' + inFolder.length + "</span>" +
+      '<svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>' +
+      '<div class="collapse' + (fi === 0 ? " open" : "") + '"><div class="collapse-inner"><div class="folder-body">' +
+      (inFolder.length ?
+        '<ul class="materials">' + inFolder.map(function(m){
+          var href = m.file || m.link || "#";
+          return '<li class="material"><span class="mat-kind">' + esc(m.kind || "FILE") + "</span>" +
+            '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(m.label) + "</a></li>";
+        }).join("") + "</ul>" :
+        '<p class="voice-hint" style="padding:8px 0 12px">Nothing filed under ' + esc(f.key.toLowerCase()) + " yet (" + esc(f.hint) + ").</p>") +
+      "</div></div></div></div>";
+  }).join("");
+  drawer.show({
+    eyebrow: "Course Workspace · " + (c.code || "Course"),
+    title: c.title || "Course",
+    sub: esc(c.term || ""),
+    body: body + '<div class="drawer-actions" style="margin-top:6px">' + editLink("courses", "Edit this course") + "</div>",
+    wire: function(root){
+      root.querySelectorAll(".folder-head").forEach(function(head){
+        head.addEventListener("click", function(){
+          var folder = head.closest(".folder");
+          var open = folder.classList.toggle("open");
+          folder.querySelector(".collapse").classList.toggle("open", open);
+        });
+      });
+    }
+  });
+}
+
+/* ============================================================
+   LITERATURE — reading vault: search, drawers, drag-and-drop
+   ============================================================ */
+function litStatus(e){
+  var o = overrides.litStatus(e.title);
+  return o || e.status || "To-Read";
+}
+function litMedia(e){
+  var m = e.media;
+  if (!m) return [];
+  if (typeof m === "string") return [m];
+  return m.map(function(x){ return typeof x === "string" ? x : (x.image || ""); }).filter(Boolean);
+}
+function renderLiterature(){
+  var entries = DATA.literature.entries || [];
+  var queueEl = document.getElementById("lit-queue");
+  var archEl = document.getElementById("lit-archive");
+  if (!entries.length){
+    queueEl.innerHTML = emptyState("literature", "Your To-Read inbox is empty. Log the papers your advisor recommends.");
+    archEl.innerHTML = '<div class="empty"><span class="empty-glyph">◌</span>Read papers will collect here.</div>';
+    return;
+  }
+  function cardHTML(e, i){
+    return '<div class="lit-entry" draggable="true" data-i="' + i + '" tabindex="0" role="button">' +
+      '<div class="lit-top"><span class="lit-title">' + esc(e.title) + "</span>" +
+      '<span class="lit-year">' + esc(e.year || "") + "</span></div>" +
+      (e.author ? '<div class="lit-author">' + esc(e.author) + "</div>" : "") +
+      ((e.tags || []).length ? '<div class="lit-tags">' + e.tags.map(function(t){
+        return '<span class="lit-tag">' + esc(t) + "</span>";
+      }).join("") + "</div>" : "") +
+      (e.summary ? '<div class="lit-summary">' + esc(e.summary) + "</div>" : "") +
+      "</div>";
+  }
+  var q = [], a = [];
+  entries.forEach(function(e, i){
+    (litStatus(e) === "Read" ? a : q).push(cardHTML(e, i));
+  });
+  queueEl.innerHTML = q.join("") || '<div class="empty"><span class="empty-glyph">✓</span>Queue is clear.</div>';
+  archEl.innerHTML = a.join("") || '<div class="empty"><span class="empty-glyph">◌</span>Nothing archived yet.</div>';
+  wireLitCards();
+  applyLitSearch();
+}
+function wireLitCards(){
+  var entries = DATA.literature.entries || [];
+  document.querySelectorAll(".lit-entry").forEach(function(card){
+    var i = Number(card.getAttribute("data-i"));
+    card.addEventListener("click", function(){ openLitDrawer(entries[i], i); });
+    card.addEventListener("keydown", function(e){
+      if (e.key === "Enter"){ e.preventDefault(); openLitDrawer(entries[i], i); }
+    });
+    card.addEventListener("dragstart", function(ev){
+      ev.dataTransfer.setData("text/plain", String(i));
+      ev.dataTransfer.effectAllowed = "move";
+      card.classList.add("dragging");
+    });
+    card.addEventListener("dragend", function(){ card.classList.remove("dragging"); });
+  });
+  [document.getElementById("lit-queue"), document.getElementById("lit-archive")].forEach(function(col){
+    col.addEventListener("dragover", function(ev){
+      ev.preventDefault();
+      ev.dataTransfer.dropEffect = "move";
+      col.classList.add("drag-over");
+    });
+    col.addEventListener("dragleave", function(){ col.classList.remove("drag-over"); });
+    col.addEventListener("drop", function(ev){
+      ev.preventDefault();
+      col.classList.remove("drag-over");
+      var i = Number(ev.dataTransfer.getData("text/plain"));
+      var target = col.getAttribute("data-status");
+      if (!isNaN(i)) setLitStatus(i, target);
+    });
+  });
+}
+function setLitStatus(i, status){
+  var e = (DATA.literature.entries || [])[i];
+  if (!e || litStatus(e) === status) return;
+  e.status = status;
+  overrides.setLit(e.title, status);
+  renderLiterature();
+  gitSave("content/data/literature.json", 'dashboard: mark "' + e.title + '" as ' + status, function(json){
+    (json.entries || []).forEach(function(x){
+      if (x.title === e.title) x.status = status;
+    });
+    return json;
+  }).then(function(){
+    toast('Moved to "' + status + '" and synced to the CMS.');
+  }).catch(function(){
+    toast('Moved to "' + status + '" on this device. Log in via /admin/ to sync.');
+  });
+}
+function applyLitSearch(){
+  var q = document.getElementById("lit-search").value.trim().toLowerCase();
+  var entries = DATA.literature.entries || [];
+  var shown = 0, total = 0;
+  document.querySelectorAll(".lit-entry").forEach(function(card){
+    total++;
+    var e = entries[Number(card.getAttribute("data-i"))] || {};
+    var hay = [e.title, e.author, e.year, (e.tags || []).join(" "), e.summary].join(" ").toLowerCase();
+    var hit = !q || hay.indexOf(q) !== -1;
+    card.classList.toggle("is-hidden", !hit);
+    if (hit) shown++;
+  });
+  document.getElementById("lit-filter-note").textContent = q ? shown + " / " + total + " match" : "";
+}
+document.getElementById("lit-search").addEventListener("input", applyLitSearch);
+
+function openLitDrawer(e, i){
+  var media = litMedia(e);
+  var status = litStatus(e);
+  var body =
+    '<div class="drawer-section"><div class="drawer-actions">' +
+    (e.pdf ? '<a class="btn" target="_blank" rel="noopener" href="' + esc(e.pdf) + '">Open full-text PDF</a>' : "") +
+    '<button class="btn btn-ghost" id="lit-flip" type="button">' +
+      (status === "Read" ? "Move back to To-Read" : "Mark as Read") + "</button>" +
+    editLink("literature", "Edit entry") +
+    "</div></div>" +
+    ((e.tags || []).length ?
+      '<div class="drawer-section"><div class="lit-tags">' + e.tags.map(function(t){
+        return '<span class="lit-tag">' + esc(t) + "</span>";
+      }).join("") + "</div></div>" : "") +
+    (e.summary ?
+      '<div class="drawer-section"><div class="drawer-label">Abstract / Summary</div>' +
+      '<div class="prose"><p>' + esc(e.summary) + "</p></div></div>" : "") +
+    '<div class="drawer-section"><div class="drawer-label">Running Notes</div>' +
+    (e.notes ? '<div class="prose">' + mdToHTML(e.notes) + "</div>" :
+      '<p class="voice-hint">No notes yet. Open "Edit entry" to write running notes, summaries, or citations — Markdown is supported.</p>') +
+    "</div>" +
+    (media.length ?
+      '<div class="drawer-section"><div class="drawer-label">Attached Graphics</div>' +
+      '<div class="media-grid">' + media.map(function(src){
+        return '<a href="' + esc(src) + '" target="_blank" rel="noopener"><img src="' + esc(src) + '" alt="Attached graphic" loading="lazy"></a>';
+      }).join("") + "</div></div>" : "");
+  drawer.show({
+    eyebrow: "Reading Workspace · " + status,
+    title: e.title || "Untitled entry",
+    sub: [esc(e.author || ""), esc(e.year || "")].filter(Boolean).join(" · "),
+    body: body,
+    wire: function(root){
+      root.querySelector("#lit-flip").addEventListener("click", function(){
+        var next = litStatus(e) === "Read" ? "To-Read" : "Read";
+        drawer.hide();
+        setLitStatus(i, next);
+      });
+    }
+  });
+}
+
+/* ============================================================
+   JOURNALS — deep aim profiles
+   ============================================================ */
+function renderJournals(){
+  var list = document.getElementById("journal-list");
+  var journals = DATA.journals.journals || [];
+  if (!journals.length){
+    list.innerHTML = emptyState("journals", "No target journals yet. Log the outlets your advisor recommends.");
+    return;
+  }
+  list.innerHTML = journals.map(function(j, i){
+    return '<div class="journal" role="button" tabindex="0" data-i="' + i + '">' +
+      '<div class="journal-name">' + esc(j.name) + "</div>" +
+      '<div class="journal-focus">' + esc(j.focus || "") + "</div>" +
+      '<span class="journal-open">Aim Profile' +
+      '<svg class="arrow" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>' +
+      "</div>";
+  }).join("");
+  list.querySelectorAll(".journal").forEach(function(row){
+    function open(){ openJournalDrawer(journals[Number(row.getAttribute("data-i"))]); }
+    row.addEventListener("click", open);
+    row.addEventListener("keydown", function(e){
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); open(); }
+    });
+  });
+}
+function openJournalDrawer(j){
+  var body =
+    (j.focus ?
+      '<div class="drawer-section"><div class="drawer-label">Focus</div>' +
+      '<div class="prose"><p>' + esc(j.focus) + "</p></div></div>" : "") +
+    (j.aims ?
+      '<div class="drawer-section"><div class="drawer-label">Technical Aims &amp; Scope</div>' +
+      '<div class="prose">' + mdToHTML(j.aims) + "</div></div>" : "") +
+    '<div class="drawer-section"><div class="spec-grid">' +
+    '<div class="spec"><div class="spec-label">Word Limit</div><div class="spec-value">' + esc(j.word_limit || "Not logged") + "</div></div>" +
+    '<div class="spec"><div class="spec-label">Review Frequency</div><div class="spec-value">' + esc(j.review_time || "Not logged") + "</div></div>" +
+    "</div></div>" +
+    '<div class="drawer-section"><div class="drawer-label">Documents</div><div class="drawer-actions">' +
+    (j.pdf_packet ? '<a class="btn" target="_blank" rel="noopener" href="' + esc(j.pdf_packet) + '">Open Guidelines Packet (PDF)</a>' : "") +
+    (j.guidelines ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + esc(j.guidelines) + '">Submission Guidelines ↗</a>' : "") +
+    editLink("journals", "Edit journal") +
+    "</div>" +
+    (!j.pdf_packet ? '<p class="voice-hint" style="margin-top:10px">Upload the journal\u2019s PDF guidelines packet in the CMS and it becomes instantly reviewable here.</p>' : "") +
+    "</div>";
+  drawer.show({
+    eyebrow: "Journal Aim Profile",
+    title: j.name || "Journal",
+    sub: "",
+    body: body
+  });
+}
+
+/* ============================================================
+   PIPELINES — execution profiles with sub-task checklists
+   ============================================================ */
+function pipeItemHTML(kind, i, name, sub, foot){
+  return '<div class="pipe-item" role="button" tabindex="0" data-kind="' + kind + '" data-i="' + i + '">' +
+    '<div class="pipe-item-name">' + name + "</div>" +
+    (sub ? '<div class="pipe-item-sub">' + sub + "</div>" : "") +
+    '<div class="pipe-item-foot">' + foot + "</div></div>";
+}
+function renderPipelines(){
+  var d = DATA.pipelines;
+  var s = d.submissions || [], c = d.conferences || [], g = d.grants || [], p = d.programs || [];
+
+  document.getElementById("pipe-submissions").innerHTML = s.map(function(it, i){
+    return pipeItemHTML("submissions", i, esc(it.title), esc(it.journal || ""), badge(it.status || "Drafting"));
+  }).join("") || emptyState("pipelines", "No submissions tracked.");
+  document.getElementById("pipe-conferences").innerHTML = c.map(function(it, i){
+    var role = it.attendance === "Presenting" ?
+      '<span class="badge badge-violet"><span class="bd"></span>Presenting</span>' :
+      '<span class="badge badge-gray"><span class="bd"></span>Spectator</span>';
+    return pipeItemHTML("conferences", i, esc(it.name),
+      '<span class="date-tag">' + esc(it.date || "") + "</span>", role + badge(it.status || "Planned"));
+  }).join("") || emptyState("pipelines", "No conferences tracked.");
+  document.getElementById("pipe-grants").innerHTML = g.map(function(it, i){
+    return pipeItemHTML("grants", i, esc(it.name),
+      esc(it.sponsor || "") + (it.deadline ? ' · <span class="date-tag">due ' + esc(it.deadline) + "</span>" : ""),
+      badge(it.status || "Scouting"));
+  }).join("") || emptyState("pipelines", "No grants tracked.");
+  document.getElementById("pipe-programs").innerHTML = p.map(function(it, i){
+    return pipeItemHTML("programs", i, esc(it.name),
+      esc(it.org || "") + (it.note ? " · " + esc(it.note) : ""), badge(it.status || "Watching"));
+  }).join("") || emptyState("pipelines", "No opportunities tracked.");
+
+  document.getElementById("count-submissions").textContent = s.length || "";
+  document.getElementById("count-conferences").textContent = c.length || "";
+  document.getElementById("count-grants").textContent = g.length || "";
+  document.getElementById("count-programs").textContent = p.length || "";
+
+  var KINDS = { submissions: s, conferences: c, grants: g, programs: p };
+  document.querySelectorAll(".pipe-item").forEach(function(el){
+    var kind = el.getAttribute("data-kind"), i = Number(el.getAttribute("data-i"));
+    function open(){ openPipeDrawer(kind, KINDS[kind][i], i); }
+    el.addEventListener("click", open);
+    el.addEventListener("keydown", function(e){
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); open(); }
+    });
+  });
+}
+var PIPE_EYEBROW = {
+  submissions: "Journal Submission Profile",
+  conferences: "Conference Execution Profile",
+  grants: "Grant Execution Profile",
+  programs: "Opportunity Profile"
+};
+function openPipeDrawer(kind, it, i){
+  if (!it) return;
+  var name = it.title || it.name || "Entry";
+  var dates = it.dates || [];
+  var subs = it.subtasks || [];
+  var metaBits = [];
+  if (it.journal) metaBits.push(esc(it.journal));
+  if (it.sponsor) metaBits.push(esc(it.sponsor));
+  if (it.org) metaBits.push(esc(it.org));
+  if (it.attendance) metaBits.push(it.attendance === "Presenting" ?
+    '<span class="badge badge-violet"><span class="bd"></span>Presenting</span>' :
+    '<span class="badge badge-gray"><span class="bd"></span>Spectator</span>');
+
+  var body =
+    '<div class="drawer-section"><div class="drawer-actions">' + badge(it.status || "—") +
+    (it.ref ? '<a class="btn" target="_blank" rel="noopener" href="' + esc(it.ref) + '">Open reference draft</a>' : "") +
+    editLink("pipelines", "Edit entry") + "</div></div>" +
+    '<div class="drawer-section"><div class="drawer-label">Critical Operational Dates</div>' +
+    (dates.length || it.date || it.deadline ?
+      '<div class="kv-rows">' +
+      (it.date ? '<div class="kv"><span class="k">Event date</span><span class="date-tag">' + esc(it.date) + "</span></div>" : "") +
+      (it.deadline ? '<div class="kv"><span class="k">Deadline</span><span class="date-tag">' + esc(it.deadline) + "</span></div>" : "") +
+      dates.map(function(kv){
+        return '<div class="kv"><span class="k">' + esc(kv.label) + '</span><span class="date-tag">' + esc(kv.when) + "</span></div>";
+      }).join("") + "</div>" :
+      '<p class="voice-hint">No operational dates logged — add submission closings, notification dates, and event dates in the CMS.</p>') +
+    "</div>" +
+    '<div class="drawer-section"><div class="drawer-label">Execution Checklist</div>' +
+    (subs.length ?
+      '<ul class="hw-subs" id="pipe-subs">' + subs.map(function(sub, j){
+        var key = "pipe|" + kind + "|" + i + "|" + j;
+        var isDone = overrides.sub(key) != null ? overrides.sub(key) : !!sub.done;
+        return '<li class="milestone toggleable' + (isDone ? " done" : "") + '" data-key="' + key + '" data-j="' + j + '">' +
+          '<span class="tick" role="checkbox" tabindex="0" aria-checked="' + isDone + '">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span>' +
+          '<span class="m-text">' + esc(sub.task) + "</span></li>";
+      }).join("") + "</ul>" :
+      '<p class="voice-hint">No sub-tasks yet — add "Register", "Finalize slides", "Submit paper layout" style steps in the CMS to track them here.</p>') +
+    "</div>";
+
+  drawer.show({
+    eyebrow: PIPE_EYEBROW[kind] || "Pipeline Entry",
+    title: name,
+    sub: metaBits.join(" · "),
+    body: body,
+    wire: function(root){
+      root.querySelectorAll(".milestone.toggleable").forEach(function(li){
+        var tick = li.querySelector(".tick");
+        function flip(){
+          var now = !li.classList.contains("done");
+          li.classList.toggle("done", now);
+          tick.setAttribute("aria-checked", String(now));
+          overrides.setSub(li.getAttribute("data-key"), now);
+          var j = Number(li.getAttribute("data-j"));
+          if (it.subtasks && it.subtasks[j]) it.subtasks[j].done = now;
+          gitSave("content/data/pipelines.json", "dashboard: toggle pipeline sub-task", function(json){
+            var list = json[kind] || [];
+            if (list[i] && list[i].subtasks && list[i].subtasks[j]) list[i].subtasks[j].done = now;
+            return json;
+          }).then(function(){
+            toast("Synced to the CMS — the site will redeploy in a moment.");
+          }).catch(function(){
+            toast("Saved on this device. Log in via /admin/ to sync it to the repo.");
+          });
+        }
+        tick.addEventListener("click", flip);
+        tick.addEventListener("keydown", function(e){
+          if (e.key === "Enter" || e.key === " "){ e.preventDefault(); flip(); }
+        });
+      });
+    }
+  });
+}
+
+/* ============================================================
+   WRITING PROGRESS MATRIX
+   ============================================================ */
+function renderWriting(){
+  var d = DATA.writing;
+  var rows = document.getElementById("write-rows");
+  if (!d){
+    document.getElementById("writing-project").textContent = "No writing project set";
+    document.getElementById("writing-phase").textContent = "";
+    rows.innerHTML = emptyState("writing", "Track section-by-section progress on your qualifying paper or dissertation.");
+    return;
+  }
+  document.getElementById("writing-project").textContent = d.project || "Current Writing Project";
+  document.getElementById("writing-phase").textContent = d.phase || "";
+  rows.innerHTML = (d.sections || []).map(function(s){
+    var p = Math.max(0, Math.min(100, Number(s.progress) || 0));
+    return '<div class="write-row"><span class="write-name">' + esc(s.name) + "</span>" +
+      '<div class="write-track"><div class="write-fill" data-p="' + p + '"></div></div>' +
+      '<span class="write-pct">' + p + "%</span></div>";
+  }).join("") || emptyState("writing", "No sections yet — add chapters with a 0–100 progress value.");
+  if (document.getElementById("view-pipelines").classList.contains("active")){
+    writingFilled = true;
+    fillWritingBars();
+  }
+}
+
+/* ============================================================
+   SCRATCHPAD (device-local by design)
+   ============================================================ */
 var scratchStore = {
   key: "scholar-command-scratchpad",
+  mem: [],
   read: function(){
     try { return JSON.parse(localStorage.getItem(this.key)) || []; }
-    catch(e){ return this.mem || []; }
+    catch(e){ return this.mem; }
   },
   write: function(items){
     this.mem = items;
     try { localStorage.setItem(this.key, JSON.stringify(items)); } catch(e){}
   }
 };
-
 function renderScratch(){
   var list = document.getElementById("scratch-list");
   var input = document.getElementById("scratch-input");
@@ -1469,13 +2516,12 @@ function renderScratch(){
     var open = items.filter(function(i){ return !i.done; }).length;
     count.textContent = items.length ? open + " open" : "";
   }
-
   function makeNode(item, animateIn){
     var li = document.createElement("li");
     li.className = "scratch-item" + (item.done ? " done" : "") + (animateIn ? " entering" : "");
     li.innerHTML =
       '<input type="checkbox" class="scratch-check"' + (item.done ? " checked" : "") + ' aria-label="Mark done">' +
-      '<span class="scratch-text">' + esc(item.text) + '</span>' +
+      '<span class="scratch-text">' + esc(item.text) + "</span>" +
       '<button class="scratch-del" aria-label="Delete item">&times;</button>';
     li.querySelector(".scratch-check").addEventListener("change", function(){
       item.done = this.checked;
@@ -1499,10 +2545,8 @@ function renderScratch(){
     }
     return li;
   }
-
   items.forEach(function(it){ list.appendChild(makeNode(it, false)); });
   updateCount();
-
   input.addEventListener("keydown", function(e){
     if (e.key !== "Enter") return;
     var text = input.value.trim();
@@ -1516,243 +2560,44 @@ function renderScratch(){
   });
 }
 
-/* ---------- Calendar ---------- */
-function renderCalendar(settings){
-  var slot = document.getElementById("cal-slot");
-  if (settings.calendar_embed){
-    slot.innerHTML = '<iframe class="cal-frame" src="' + esc(settings.calendar_embed) +
-      '" title="Month calendar" loading="lazy"></iframe>';
-  } else {
-    slot.innerHTML = '<div class="cal-placeholder">' +
-      '<strong>Calendar embed not configured yet.</strong><br><br>' +
-      'Paste your Google Calendar or Notion calendar embed URL into ' +
-      '<code>Edit &rarr; Calendar Embed URL</code> ' +
-      'and the full-month view will render here.</div>';
-  }
-}
-
-/* ---------- Roadmap ---------- */
-function renderRoadmap(data){
-  var stateClass = { "Completed": "completed", "Active Focus": "active", "Future": "future" };
-  var stateBadge = { "Completed": "badge-green", "Active Focus": "badge-violet", "Future": "badge-gray" };
-  document.getElementById("roadmap").innerHTML = (data.milestones || []).map(function(m){
-    var cls = stateClass[m.state] || "future";
-    return '<li class="rm-item ' + cls + '">' +
-      '<span class="rm-node" aria-hidden="true"></span>' +
-      '<div class="rm-title">' + esc(m.title) + '</div>' +
-      (m.note ? '<div class="rm-note">' + esc(m.note) + '</div>' : "") +
-      '<div class="rm-state"><span class="badge ' + (stateBadge[m.state] || "badge-gray") + '"><span class="bd"></span>' + esc(m.state || "Future") + '</span></div>' +
-      '</li>';
-  }).join("");
-}
-
-/* ---------- Class Repository ---------- */
-function renderCourses(data){
-  var grid = document.getElementById("course-grid");
-  var courses = data.courses || [];
-  document.getElementById("courses-count").textContent = courses.length + " courses";
-  grid.innerHTML = courses.map(function(c, i){
-    var mats = (c.materials || []).map(function(m){
-      var href = m.file || m.link || "#";
-      return '<li class="material"><span class="mat-kind">' + esc(m.kind || "FILE") + '</span>' +
-        '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(m.label) + '</a></li>';
-    }).join("");
-    return '<div class="course" role="button" tabindex="0" aria-expanded="false" data-course="' + i + '">' +
-      '<div class="course-code">' + esc(c.code || "") + '</div>' +
-      '<div class="course-title">' + esc(c.title) + '</div>' +
-      '<div class="course-term">' + esc(c.term || "") + '</div>' +
-      '<div class="course-meta"><span class="course-count">' + (c.materials || []).length + ' items</span>' +
-      '<svg class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>' +
-      '<div class="collapse"><div class="collapse-inner"><ul class="materials">' + mats + '</ul></div></div>' +
-      '</div>';
-  }).join("");
-
-  grid.querySelectorAll(".course").forEach(function(card){
-    function toggle(){
-      var open = card.getAttribute("aria-expanded") === "true";
-      card.setAttribute("aria-expanded", String(!open));
-      card.querySelector(".collapse").classList.toggle("open", !open);
-    }
-    card.addEventListener("click", function(e){
-      if (e.target.closest("a")) return;
-      toggle();
-    });
-    card.addEventListener("keydown", function(e){
-      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(); }
-    });
-  });
-}
-
-/* ---------- Journals ---------- */
-function renderJournals(data){
-  document.getElementById("journal-list").innerHTML = (data.journals || []).map(function(j){
-    return '<div class="journal">' +
-      '<div class="journal-name">' + esc(j.name) + '</div>' +
-      '<div class="journal-focus">' + esc(j.focus || "") + '</div>' +
-      '<a class="journal-link" href="' + esc(j.guidelines || "#") + '" target="_blank" rel="noopener">Submission Guidelines' +
-      '<svg class="arrow" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></a>' +
-      '</div>';
-  }).join("");
-}
-
-/* ---------- Literature ---------- */
-function renderLiterature(data){
-  var entries = data.entries || [];
-  var queueEl = document.getElementById("lit-queue");
-  var archEl  = document.getElementById("lit-archive");
-  var railEl  = document.getElementById("tag-rail");
-  var noteEl  = document.getElementById("lit-filter-note");
-
-  var allTags = [];
-  entries.forEach(function(e){
-    (e.tags || []).forEach(function(t){ if (allTags.indexOf(t) === -1) allTags.push(t); });
-  });
-  allTags.sort();
-
-  function entryHTML(e){
-    var tags = (e.tags || []).map(function(t){
-      return '<button class="lit-tag" data-tag="' + esc(t) + '">' + esc(t) + '</button>';
-    }).join("");
-    var files = "";
-    if (e.pdf)   files += '<a href="' + esc(e.pdf)   + '" target="_blank" rel="noopener">PDF</a>';
-    if (e.media) files += '<a href="' + esc(e.media) + '" target="_blank" rel="noopener">Media</a>';
-    return '<div class="lit-entry" data-tags="' + esc((e.tags || []).join("|")) + '">' +
-      '<div class="lit-top"><span class="lit-title">' + esc(e.title) + '</span>' +
-      '<span class="lit-year">' + esc(e.year || "") + '</span></div>' +
-      (tags ? '<div class="lit-tags">' + tags + '</div>' : "") +
-      (e.summary ? '<div class="lit-summary">' + esc(e.summary) + '</div>' : "") +
-      (files ? '<div class="lit-files">' + files + '</div>' : "") +
-      '</div>';
-  }
-
-  var queue = entries.filter(function(e){ return e.status !== "Read"; });
-  var read  = entries.filter(function(e){ return e.status === "Read"; });
-  queueEl.innerHTML = queue.map(entryHTML).join("") || '<div class="lit-empty">Queue is clear.</div>';
-  archEl.innerHTML  = read.map(entryHTML).join("")  || '<div class="lit-empty">Nothing archived yet.</div>';
-
-  railEl.innerHTML = '<button class="tag on" data-tag="">All</button>' + allTags.map(function(t){
-    return '<button class="tag" data-tag="' + esc(t) + '">' + esc(t) + '</button>';
-  }).join("");
-
-  function applyFilter(tag){
-    railEl.querySelectorAll(".tag").forEach(function(b){
-      b.classList.toggle("on", (b.getAttribute("data-tag") || "") === (tag || ""));
-    });
-    document.querySelectorAll(".lit-entry").forEach(function(el){
-      var tags = (el.getAttribute("data-tags") || "").split("|");
-      setVisible(el, !tag || tags.indexOf(tag) !== -1);
-    });
-    noteEl.textContent = tag ? 'filtering: "' + tag + '"' : "";
-  }
-
-  railEl.addEventListener("click", function(e){
-    var b = e.target.closest(".tag");
-    if (b) applyFilter(b.getAttribute("data-tag") || "");
-  });
-  document.querySelectorAll(".lit-tag").forEach(function(b){
-    b.addEventListener("click", function(){ applyFilter(b.getAttribute("data-tag")); });
-  });
-}
-
-/* ---------- Writing Progress Matrix ---------- */
-function renderWriting(data){
-  document.getElementById("writing-project").textContent = data.project || "Current Writing Project";
-  document.getElementById("writing-phase").textContent = data.phase || "";
-  document.getElementById("write-rows").innerHTML = (data.sections || []).map(function(s){
-    var p = Math.max(0, Math.min(100, Number(s.progress) || 0));
-    return '<div class="write-row"><span class="write-name">' + esc(s.name) + '</span>' +
-      '<div class="write-track"><div class="write-fill" data-p="' + p + '"></div></div>' +
-      '<span class="write-pct">' + p + '%</span></div>';
-  }).join("");
-  if (document.getElementById("view-pipelines").classList.contains("active")){
-    writingFilled = true;
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        document.querySelectorAll(".write-fill").forEach(function(f){
-          f.style.transform = "scaleX(" + (Number(f.getAttribute("data-p")) / 100) + ")";
-        });
-      });
-    });
-  }
-}
-
-/* ---------- Advancement Pipelines ---------- */
-function pipeItem(name, sub, foot){
-  return '<div class="pipe-item">' +
-    '<div class="pipe-item-name">' + name + '</div>' +
-    (sub ? '<div class="pipe-item-sub">' + sub + '</div>' : "") +
-    '<div class="pipe-item-foot">' + foot + '</div></div>';
-}
-function renderPipelines(data){
-  var s = data.submissions || [], c = data.conferences || [], g = data.grants || [], p = data.programs || [];
-
-  document.getElementById("pipe-submissions").innerHTML = s.map(function(it){
-    return pipeItem(esc(it.title), esc(it.journal || ""), badge(it.status || "Drafting"));
-  }).join("") || '<div class="lit-empty">No submissions tracked.</div>';
-
-  document.getElementById("pipe-conferences").innerHTML = c.map(function(it){
-    var role = it.attendance === "Presenting" ?
-      '<span class="badge badge-violet"><span class="bd"></span>Presenting</span>' :
-      '<span class="badge badge-gray"><span class="bd"></span>Spectator</span>';
-    return pipeItem(esc(it.name),
-      '<span class="date-tag">' + esc(it.date || "") + '</span>',
-      role + badge(it.status || "Planned"));
-  }).join("") || '<div class="lit-empty">No conferences tracked.</div>';
-
-  document.getElementById("pipe-grants").innerHTML = g.map(function(it){
-    return pipeItem(esc(it.name),
-      esc(it.sponsor || "") + (it.deadline ? ' · <span class="date-tag">due ' + esc(it.deadline) + '</span>' : ""),
-      badge(it.status || "Scouting"));
-  }).join("") || '<div class="lit-empty">No grants tracked.</div>';
-
-  document.getElementById("pipe-programs").innerHTML = p.map(function(it){
-    return pipeItem(esc(it.name),
-      esc(it.org || "") + (it.note ? " · " + esc(it.note) : ""),
-      badge(it.status || "Watching"));
-  }).join("") || '<div class="lit-empty">No opportunities tracked.</div>';
-
-  document.getElementById("count-submissions").textContent = s.length;
-  document.getElementById("count-conferences").textContent = c.length;
-  document.getElementById("count-grants").textContent = g.length;
-  document.getElementById("count-programs").textContent = p.length;
-}
-
-/* ---------- Discussion log toggle ---------- */
-document.getElementById("log-toggle").addEventListener("click", function(){
-  var open = this.getAttribute("aria-expanded") === "true";
-  this.setAttribute("aria-expanded", String(!open));
-  document.getElementById("log-panel").classList.toggle("open", !open);
-});
-
-/* ---------- Boot ---------- */
+/* ============================================================
+   BOOT — fetch everything, render everything
+   ============================================================ */
 showView(location.hash.replace("#", "") || "home");
+renderScratch();
 
 Promise.all([
-  loadJSON("content/data/settings.json",   SEEDS.settings),
-  loadJSON("content/data/tools.json",      SEEDS.tools),
-  loadJSON("content/data/supervisor.json", SEEDS.supervisor),
-  loadJSON("content/data/week.json",       SEEDS.week),
-  loadJSON("content/data/roadmap.json",    SEEDS.roadmap),
-  loadJSON("content/data/courses.json",    SEEDS.courses),
-  loadJSON("content/data/journals.json",   SEEDS.journals),
-  loadJSON("content/data/literature.json", SEEDS.literature),
-  loadJSON("content/data/writing.json",    SEEDS.writing),
-  loadJSON("content/data/pipelines.json",  SEEDS.pipelines)
+  loadJSON("content/data/settings.json"),
+  loadJSON("content/data/tools.json"),
+  loadJSON("content/data/supervisor.json"),
+  loadJSON("content/data/roadmap.json"),
+  loadJSON("content/data/courses.json"),
+  loadJSON("content/data/journals.json"),
+  loadJSON("content/data/literature.json"),
+  loadJSON("content/data/writing.json"),
+  loadJSON("content/data/pipelines.json")
 ]).then(function(d){
-  renderHeader(d[0]);
-  renderTools(d[1]);
-  renderSentinel(d[2]);
-  renderWeekModule(d[3]);
-  renderCalendar(d[0]);
-  renderRoadmap(d[4]);
-  renderCourses(d[5]);
-  renderJournals(d[6]);
-  renderLiterature(d[7]);
-  renderWriting(d[8]);
-  renderPipelines(d[9]);
-});
+  if (d[0]) DATA.settings = d[0];
+  if (d[1]) DATA.tools = d[1];
+  if (d[2]) DATA.supervisor = d[2];
+  if (d[3]) DATA.roadmap = d[3];
+  if (d[4]) DATA.courses = d[4];
+  if (d[5]) DATA.journals = d[5];
+  if (d[6]) DATA.literature = d[6];
+  if (d[7]) DATA.writing = d[7];
+  if (d[8]) DATA.pipelines = d[8];
 
-renderScratch();
+  renderHeader();
+  renderTools();
+  renderSentinel();
+  initCalendar();
+  renderRoadmap();
+  renderCourses();
+  renderJournals();
+  renderLiterature();
+  renderWriting();
+  renderPipelines();
+});
 })();
 </script>
 </body>
